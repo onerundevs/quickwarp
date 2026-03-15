@@ -687,15 +687,17 @@ async function fetchProject(id) {
   if (cache[id]) return cache[id];
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 10000);
     const r = await fetch(`https://trampoline.turbowarp.org/api/projects/${id}`, { signal: controller.signal });
     clearTimeout(timeout);
     if (!r.ok) return null;
     const d = await r.json();
-    if (!d || !d.title) return null;
+    if (!d || typeof d !== 'object') return null;
+    // trampoline returns Scratch API shape: {id, title, author: {username}, stats: {views,loves}, image, ...}
+    console.log('trampoline response for', id, ':', d);
     cache[id] = d;
     return d;
-  } catch(e) { return null; }
+  } catch(e) { console.error('fetchProject error', id, e); return null; }
 }
 
 function fmtNum(n) {
@@ -796,7 +798,17 @@ async function openDetail(id) {
   document.getElementById('detail-modal-title').textContent = 'Loading...';
   document.getElementById('detail-body').innerHTML = '<div style="display:flex;justify-content:center;padding:40px"><div class="loading-spinner" style="width:24px;height:24px;border-width:3px;border-color:var(--border);border-top-color:var(--acc)"></div></div>';
   const p = await fetchProject(id);
-  if (!p) { document.getElementById('detail-body').innerHTML = '<div class="err-state">Could not load project data.</div>'; return; }
+  if (!p || !p.title) {
+    // Try opening directly on Scratch as fallback
+    document.getElementById('detail-body').innerHTML = `<div class="err-state" style="padding:32px;text-align:center">
+      <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Could not load project data from API.</p>
+      <a href="https://scratch.mit.edu/projects/${id}" target="_blank" rel="noopener"
+         style="display:inline-block;padding:9px 18px;background:var(--acc);color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">
+        View on Scratch instead
+      </a>
+    </div>`;
+    return;
+  }
   document.getElementById('detail-modal-title').textContent = p.title;
   const thumb = p.image || `https://cdn2.scratch.mit.edu/get_image/project/${id}_480x360.png`;
   const desc = p.description || 'No description provided.';
