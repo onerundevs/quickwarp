@@ -491,7 +491,7 @@ async function loadProfile(userId) {
 function renderSidebarAuthLoading() {
   const authArea = document.getElementById('sidebar-auth-area');
   const bottomArea = document.getElementById('sidebar-bottom-area');
-  authArea.innerHTML = `<div style="padding:10px 10px;display:flex;align-items:center;gap:8px;opacity:.4"><div class="loading-spinner" style="border-color:var(--border);border-top-color:var(--muted)"></div><span style="font-size:12px;color:var(--muted)">Loading...</span></div>`;
+  authArea.innerHTML = '<div style="padding:10px 10px;font-size:12px;color:#7c7a99;opacity:.5">Loading...</div>';
   bottomArea.innerHTML = '';
 }
 
@@ -547,11 +547,13 @@ sb.auth.onAuthStateChange(async (event, session) => {
 
 (async () => {
   renderSidebarAuthLoading();
-  const { data: { session } } = await sb.auth.getSession();
-  if (session?.user) {
-    currentUser = session.user;
-    currentProfile = await loadProfile(session.user.id);
-  }
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
+      currentUser = session.user;
+      currentProfile = await loadProfile(session.user.id);
+    }
+  } catch(e) {}
   renderSidebarAuth();
 })();
 
@@ -684,10 +686,13 @@ const cache = {};
 async function fetchProject(id) {
   if (cache[id]) return cache[id];
   try {
-    // trampoline.turbowarp.org is TurboWarp's own CORS proxy for the Scratch API
-    const r = await fetch(`https://trampoline.turbowarp.org/api/projects/${id}`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const r = await fetch(`https://trampoline.turbowarp.org/api/projects/${id}`, { signal: controller.signal });
+    clearTimeout(timeout);
     if (!r.ok) return null;
     const d = await r.json();
+    if (!d || !d.title) return null;
     cache[id] = d;
     return d;
   } catch(e) { return null; }
@@ -710,34 +715,53 @@ function skeletonCard() {
   </div>`;
 }
 
+function makeCardFromData(id, p) {
+  const thumb = (p && p.image) ? p.image : `https://cdn2.scratch.mit.edu/get_image/project/${id}_480x360.png`;
+  const title = (p && p.title) ? p.title : 'Project #'+id;
+  const author = (p && p.author?.username) ? p.author.username : 'Scratch user';
+  const views = fmtNum(p?.stats?.views);
+  const loves = fmtNum(p?.stats?.loves);
+  const b = BADGES[id] || '';
+  const card = document.createElement('div');
+  card.className = 'pcard';
+  const uid = id + '_' + Math.random().toString(36).slice(2,6);
+  card.innerHTML = `
+    <div class="pcard-thumb">
+      <div class="pcard-skel" id="sk-${uid}" style="position:absolute;inset:0"></div>
+      <img src="${thumb}" alt="${title}"
+        onload="const s=document.getElementById('sk-${uid}');if(s)s.style.display='none'"
+        onerror="this.style.display='none'">
+      ${b?`<span class="pcard-badge">${b}</span>`:''}
+    </div>
+    <div class="pcard-info">
+      <div class="pcard-name">${title}</div>
+      <div class="pcard-author">by ${author}</div>
+      <div class="pcard-meta"><span>${views} views</span><span>${loves} loves</span></div>
+    </div>`;
+  card.onclick = () => openDetail(id);
+  return card;
+}
+
 async function renderGrid(gridId, ids) {
   const grid = document.getElementById(gridId);
   if (!grid) return;
+  // Show skeletons first
   grid.innerHTML = ids.map(()=>skeletonCard()).join('');
-  const projects = await Promise.all(ids.map(id => fetchProject(id)));
+  // Fetch all, but show each card as soon as it resolves (don't wait for all)
   grid.innerHTML = '';
-  projects.forEach((p, i) => {
-    if (!p) return;
-    const id = ids[i];
-    const thumb = p.image || `https://cdn2.scratch.mit.edu/get_image/project/${id}_480x360.png`;
-    const b = BADGES[id] || '';
-    const card = document.createElement('div');
-    card.className = 'pcard';
-    card.innerHTML = `
-      <div class="pcard-thumb">
-        <div class="pcard-skel" id="sk-${gridId}-${i}" style="position:absolute;inset:0"></div>
-        <img src="${thumb}" alt="${p.title}"
-          onload="const s=document.getElementById('sk-${gridId}-${i}');if(s)s.style.display='none'"
-          onerror="this.style.display='none'">
-        ${b?`<span class="pcard-badge">${b}</span>`:''}
-      </div>
-      <div class="pcard-info">
-        <div class="pcard-name">${p.title}</div>
-        <div class="pcard-author">by ${p.author?.username||'unknown'}</div>
-        <div class="pcard-meta"><span>${fmtNum(p.stats?.views)} views</span><span>${fmtNum(p.stats?.loves)} loves</span></div>
-      </div>`;
-    card.onclick = () => openDetail(id);
+  // First pass: show cards with just thumbnails immediately
+  ids.forEach(id => {
+    const card = makeCardFromData(id, null);
     grid.appendChild(card);
+  });
+  // Second pass: enrich with API data as it comes in
+  ids.forEach(async (id, i) => {
+    const p = await fetchProject(id);
+    if (!p) return; // keep fallback card as-is
+    const oldCard = grid.children[i];
+    if (!oldCard) return;
+    const newCard = makeCardFromData(id, p);
+    grid.replaceChild(newCard, oldCard);
   });
 }
 
