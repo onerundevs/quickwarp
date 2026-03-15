@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0d0d12;--s1:#13131c;--s2:#1a1a28;--s3:#21212f;
+  --acc:#7c3aed;--acc2:#9d5ffe;--acc3:#c084fc;
+  --glow:rgba(124,58,237,.4);--glow2:rgba(124,58,237,.15);
+  --text:#f1f0ff;--muted:#7c7a99;--border:rgba(124,58,237,.18);
+  --font:'Inter',sans-serif;--sidebar-w:240px;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--acc);border-radius:3px}
+
+/* SIDEBAR */
+.sidebar{position:fixed;top:0;left:0;height:100%;width:var(--sidebar-w);background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:300;transition:transform .25s cubic-bezier(.4,0,.2,1)}
+.sidebar-head{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;border-bottom:1px solid var(--border);flex-shrink:0}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;cursor:pointer;color:var(--text)}
+.logo-mark{width:26px;height:26px;background:var(--acc);border-radius:7px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px var(--glow);flex-shrink:0}
+.sidebar-close{display:none;background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:5px;line-height:1}
+.sidebar-close:hover{background:var(--s3);color:var(--text)}
+.sidebar-nav{padding:10px 8px;flex:1;overflow-y:auto}
+.nav-section{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding:12px 8px 6px}
+.nl{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;color:var(--muted);cursor:pointer;transition:.12s;font-weight:500;user-select:none}
+.nl svg{flex-shrink:0;opacity:.6}
+.nl:hover,.nl.active{background:var(--s3);color:var(--text)}
+.nl.active{color:var(--acc3)}
+.nl.active svg{opacity:1}
+.sidebar-bottom{padding:12px 8px;border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:6px}
+.btn{padding:8px 14px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:var(--font);transition:.13s;width:100%;text-align:center}
+.btn-outline{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-outline:hover{background:var(--s2);color:var(--text)}
+.btn-acc{background:var(--acc);color:#fff;box-shadow:0 0 12px var(--glow)}
+.btn-acc:hover{background:var(--acc2)}
+
+/* TOPBAR */
+.topbar{display:none;position:sticky;top:0;z-index:200;align-items:center;height:52px;padding:0 14px;gap:10px;background:rgba(13,13,18,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.hamburger{background:none;border:none;color:var(--text);cursor:pointer;padding:4px;border-radius:6px;display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.hamburger span{display:block;width:20px;height:2px;background:currentColor;border-radius:2px}
+.topbar-logo{display:flex;align-items:center;gap:7px;font-weight:700;font-size:15px;color:var(--text);cursor:pointer}
+.topbar-search{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:7px 11px;font-size:13px;color:var(--text);font-family:var(--font);outline:none}
+.topbar-search:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--glow2)}
+.topbar-search::placeholder{color:var(--muted)}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:299;backdrop-filter:blur(2px)}
+.sidebar-overlay.open{display:block}
+
+/* CONTENT */
+.content{margin-left:var(--sidebar-w);min-height:100vh}
+
+/* HERO */
+.hero{text-align:center;padding:48px 20px 36px;background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(124,58,237,.2) 0%,transparent 70%);border-bottom:1px solid var(--border)}
+.hero h1{font-size:clamp(24px,3.5vw,50px);font-weight:700;line-height:1.1;margin-bottom:12px;background:linear-gradient(135deg,#fff 30%,var(--acc3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{color:var(--muted);font-size:14px;max-width:420px;margin:0 auto 22px;line-height:1.6}
+.hero-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.hbtn{padding:10px 20px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;font-family:var(--font);transition:.15s}
+.hbtn-p{background:var(--acc);color:#fff;box-shadow:0 0 20px var(--glow)}
+.hbtn-p:hover{background:var(--acc2)}
+.hbtn-o{background:transparent;color:var(--text);border:1px solid var(--border)}
+.hbtn-o:hover{background:var(--s2)}
+
+/* TABS */
+.tabs-bar{display:flex;padding:0 16px;background:var(--s1);border-bottom:1px solid var(--border);overflow-x:auto}
+.tabs-bar::-webkit-scrollbar{height:0}
+.tab{padding:11px 16px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.12s;user-select:none}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--acc3);border-bottom-color:var(--acc)}
+
+/* MAIN */
+.main{max-width:1100px;margin:0 auto;padding:22px 18px;display:flex;gap:22px}
+.left{flex:1;min-width:0}
+.right{width:260px;flex-shrink:0}
+.sec{margin-bottom:28px}
+.sec-title{font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:13px;display:flex;align-items:center;gap:8px}
+.sec-bar{width:3px;height:14px;background:var(--acc);border-radius:2px;box-shadow:0 0 7px var(--acc);flex-shrink:0}
+
+/* PROJECT CARDS */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:13px}
+.pcard{background:var(--s1);border:1px solid var(--border);border-radius:11px;overflow:hidden;cursor:pointer;transition:.15s}
+.pcard:hover{border-color:rgba(157,95,254,.5);transform:translateY(-2px);box-shadow:0 8px 28px rgba(124,58,237,.2)}
+.pcard-thumb{width:100%;aspect-ratio:4/3;position:relative;overflow:hidden;background:var(--s2);display:flex;align-items:center;justify-content:center}
+.pcard-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:.2s}
+.pcard:hover .pcard-thumb img{transform:scale(1.04)}
+.pcard-skel{position:absolute;inset:0;background:linear-gradient(90deg,var(--s2) 25%,var(--s3) 50%,var(--s2) 75%);background-size:200% 100%;animation:skel 1.4s infinite}
+@keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.pcard-badge{position:absolute;top:6px;left:6px;z-index:2;background:rgba(124,58,237,.88);color:#ddd6fe;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:.05em;text-transform:uppercase;box-shadow:0 0 8px rgba(124,58,237,.5)}
+.pcard-info{padding:9px 10px 11px}
+.pcard-name{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcard-author{font-size:11.5px;color:var(--muted);margin-top:2px}
+.pcard-meta{display:flex;gap:10px;margin-top:6px;font-size:11px;color:var(--muted)}
+.pcard-skel-text{height:11px;border-radius:4px;background:var(--s3);margin-top:6px;animation:skel 1.4s infinite;background-size:200% 100%}
+
+/* SIDEBAR WIDGETS */
+.sc{background:var(--s1);border:1px solid var(--border);border-radius:11px;padding:14px;margin-bottom:13px}
+.sc-label{font-size:10.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:11px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.stat-box{background:var(--s2);border-radius:8px;padding:10px;text-align:center;border:1px solid var(--border)}
+.stat-num{font-size:17px;font-weight:700;color:var(--acc3)}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:1px}
+.tag-cloud{display:flex;flex-wrap:wrap;gap:5px}
+.tag{padding:4px 9px;border-radius:14px;font-size:11.5px;cursor:pointer;background:var(--s2);border:1px solid var(--border);color:var(--muted);transition:.12s}
+.tag:hover{background:var(--s3);color:var(--text);border-color:rgba(157,95,254,.4)}
+.fu{display:flex;align-items:center;gap:9px;padding:5px 0;cursor:pointer;transition:.12s;border-radius:7px}
+.fu:hover{background:var(--s2);padding:5px 7px;margin:0 -7px}
+.fu-av{width:30px;height:30px;border-radius:50%;background:var(--s3);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--acc3);flex-shrink:0;overflow:hidden}
+.fu-av img{width:100%;height:100%;object-fit:cover}
+.fu-name{font-size:13px;font-weight:500}
+.fu-count{font-size:11px;color:var(--muted)}
+
+/* PROJECT DETAIL MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:500;display:none;align-items:center;justify-content:center;padding:12px;backdrop-filter:blur(6px)}
+.overlay.open{display:flex}
+.modal{background:var(--s1);border:1px solid rgba(124,58,237,.35);border-radius:14px;width:100%;max-width:860px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 80px rgba(124,58,237,.28)}
+.modal-sm{max-width:500px}
+.mhead{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border);background:var(--s2);flex-shrink:0}
+.mtitle{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 40px)}
+.mclose{cursor:pointer;color:var(--muted);font-size:17px;padding:4px 8px;border-radius:5px;transition:.12s;line-height:1;background:none;border:none;font-family:var(--font);flex-shrink:0}
+.mclose:hover{background:var(--s3);color:var(--text)}
+.mbody{padding:16px;overflow-y:auto;flex:1}
+
+/* PROJECT DETAIL LAYOUT */
+.detail-grid{display:grid;grid-template-columns:1fr 280px;gap:16px}
+@media(max-width:620px){.detail-grid{grid-template-columns:1fr}}
+.player-wrap{width:100%;aspect-ratio:4/3;background:#000;border-radius:10px;overflow:hidden;border:1px solid var(--border);position:relative}
+.player-wrap iframe{width:100%;height:100%;border:none;display:block}
+.player-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--s2)}
+.player-ph-icon{width:52px;height:52px;border-radius:12px;background:var(--s3);display:flex;align-items:center;justify-content:center;border:1px solid var(--border)}
+.player-ph p{font-size:13px;color:var(--muted);text-align:center;max-width:180px;line-height:1.5}
+.detail-info{display:flex;flex-direction:column;gap:12px}
+.detail-title{font-size:18px;font-weight:700;line-height:1.2}
+.detail-author{font-size:13px;color:var(--muted)}
+.detail-author span{color:var(--acc3);cursor:pointer}
+.detail-stats{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.ds-box{background:var(--s2);border-radius:8px;padding:10px 12px;border:1px solid var(--border)}
+.ds-num{font-size:16px;font-weight:700;color:var(--acc3)}
+.ds-lbl{font-size:10.5px;color:var(--muted);margin-top:1px}
+.detail-desc{background:var(--s2);border-radius:8px;padding:12px;border:1px solid var(--border);font-size:13px;color:var(--muted);line-height:1.6;max-height:120px;overflow-y:auto}
+.detail-desc::-webkit-scrollbar{width:3px}
+.detail-desc::-webkit-scrollbar-thumb{background:var(--acc)}
+.play-btn{padding:11px;border-radius:8px;font-size:13.5px;font-weight:600;background:var(--acc);color:#fff;border:none;cursor:pointer;font-family:var(--font);transition:.14s;box-shadow:0 0 14px var(--glow);display:flex;align-items:center;justify-content:center;gap:8px}
+.play-btn:hover{background:var(--acc2);box-shadow:0 0 22px var(--glow)}
+.play-btn svg{flex-shrink:0}
+.detail-tags{display:flex;flex-wrap:wrap;gap:5px}
+.detail-date{font-size:11.5px;color:var(--muted)}
+
+/* PREVIEW INPUT MODAL */
+.input-row{display:flex;gap:7px;margin-bottom:9px}
+.url-input{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;transition:.13s;min-width:0}
+.url-input:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--glow2)}
+.url-input::placeholder{color:var(--muted)}
+.load-btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;background:var(--acc);color:#fff;border:none;cursor:pointer;font-family:var(--font);transition:.13s;white-space:nowrap;box-shadow:0 0 10px var(--glow)}
+.load-btn:hover{background:var(--acc2)}
+.hint{font-size:11.5px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+.quick-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:4px}
+.quick-lbl{font-size:11.5px;color:var(--muted)}
+
+/* UPLOAD */
+.dz{border:2px dashed rgba(124,58,237,.3);border-radius:10px;padding:28px 16px;text-align:center;cursor:pointer;transition:.15s;position:relative}
+.dz:hover,.dz.over{border-color:var(--acc);background:var(--glow2)}
+.dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz-icon{width:48px;height:48px;border-radius:11px;background:var(--s3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.dz h3{font-size:13.5px;font-weight:600;margin-bottom:4px}
+.dz p{font-size:12px;color:var(--muted)}
+.dz strong{color:var(--acc3)}
+.sep{display:flex;align-items:center;gap:10px;margin:12px 0;font-size:12px;color:var(--muted)}
+.sep::before,.sep::after{content:'';flex:1;height:1px;background:var(--border)}
+.running-player{width:100%;aspect-ratio:4/3;background:#000;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-bottom:12px}
+.running-player iframe{width:100%;height:100%;border:none}
+.btn-row{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
+.sec-btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font);transition:.13s;border:1px solid var(--border);background:var(--s2);color:var(--text)}
+.sec-btn:hover{background:var(--s3)}
+
+.notif{position:fixed;bottom:20px;right:20px;z-index:1000;background:var(--s2);border:1px solid rgba(157,95,254,.4);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--text);box-shadow:0 4px 24px rgba(124,58,237,.22);transform:translateY(60px);opacity:0;transition:.26s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+.notif.show{transform:translateY(0);opacity:1}
+.page{display:none}.page.active{display:block}
+.loading-spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err-state{text-align:center;padding:32px;color:var(--muted);font-size:13px}
+
+@media(max-width:900px){.right{display:none}}
+@media(max-width:700px){
+  .sidebar{transform:translateX(calc(-1 * var(--sidebar-w)))}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-close{display:block}
+  .topbar{display:flex}
+  .content{margin-left:0}
+  .main{padding:16px 14px}
+  .pgrid{grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px}
+}
+</style>
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-head">
+    <div class="logo" onclick="showPage('home');setNav('home');closeSidebar()">
+      <div class="logo-mark"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8L8 2l5 6-5 6-5-6z" fill="white" opacity=".85"/><path d="M6 8l2-3 2 3-2 3-2-3z" fill="white"/></svg></div>
+      QuickWarp
+    </div>
+    <button class="sidebar-close" onclick="closeSidebar()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Navigation</div>
+    <div class="nl active" id="nav-home" onclick="showPage('home');setNav('home');closeSidebar()">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 6.5L8 2l6 4.5V14H10v-4H6v4H2V6.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Home
+    </div>
+    <div class="nl" id="nav-explore" onclick="showPage('explore');setNav('explore');closeSidebar()">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 5.5l-2 4-4 2 2-4 4-2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>Explore
+    </div>
+    <div class="nl" onclick="openUpload();closeSidebar()">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Create
+    </div>
+    <div class="nl" onclick="notify('Ideas coming soon');closeSidebar()">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 011.5 7.7V11H6.5V9.7A4 4 0 018 2zM6.5 12.5h3M7 14.5h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Ideas
+    </div>
+    <div class="nl" onclick="notify('About coming soon');closeSidebar()">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 7v5M8 5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>About
+    </div>
+    <div class="nav-section" style="margin-top:8px">Account</div>
+    <div class="nl" onclick="notify('Sign in coming soon');closeSidebar()">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Sign in
+    </div>
+  </div>
+  <div class="sidebar-bottom">
+    <button class="btn btn-acc" onclick="notify('Join today!')">Join QuickWarp</button>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<div class="topbar" id="topbar">
+  <button class="hamburger" onclick="openSidebar()"><span></span><span></span><span></span></button>
+  <div class="topbar-logo" onclick="showPage('home');setNav('home')">
+    <div class="logo-mark" style="width:24px;height:24px;border-radius:6px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8L8 2l5 6-5 6-5-6z" fill="white" opacity=".85"/><path d="M6 8l2-3 2 3-2 3-2-3z" fill="white"/></svg></div>
+    QuickWarp
+  </div>
+  <input class="topbar-search" type="text" placeholder="Search..." onkeydown="if(event.key==='Enter')notify('Search: '+this.value)">
+</div>
+
+<div class="content">
+  <div id="page-home" class="page active">
+    <div class="hero">
+      <h1>Create anything.<br>Share everything.</h1>
+      <p>The most powerful Scratch mod — turbo speed, real .sb3 support, and a growing community.</p>
+      <div class="hero-btns">
+        <button class="hbtn hbtn-p" onclick="openUpload()">Start Creating</button>
+        <button class="hbtn hbtn-o" onclick="openLookup()">Preview a Project</button>
+      </div>
+    </div>
+    <div class="tabs-bar">
+      <div class="tab active" onclick="setTab(this,'featured')">Featured</div>
+      <div class="tab" onclick="setTab(this,'trending')">Trending</div>
+      <div class="tab" onclick="setTab(this,'recent')">Recent</div>
+      <div class="tab" onclick="setTab(this,'loved')">Most Loved</div>
+      <div class="tab" onclick="setTab(this,'remixes')">Remixes</div>
+    </div>
+    <div class="main">
+      <div class="left">
+        <div class="sec" id="tab-featured"><div class="sec-title"><span class="sec-bar"></span>Featured Projects</div><div class="pgrid" id="g-featured"></div></div>
+        <div class="sec" id="tab-trending" style="display:none"><div class="sec-title"><span class="sec-bar"></span>Trending Now</div><div class="pgrid" id="g-trending"></div></div>
+        <div class="sec" id="tab-recent" style="display:none"><div class="sec-title"><span class="sec-bar"></span>Recently Shared</div><div class="pgrid" id="g-recent"></div></div>
+        <div class="sec" id="tab-loved" style="display:none"><div class="sec-title"><span class="sec-bar"></span>Most Loved</div><div class="pgrid" id="g-loved"></div></div>
+        <div class="sec" id="tab-remixes" style="display:none"><div class="sec-title"><span class="sec-bar"></span>Top Remixes</div><div class="pgrid" id="g-remixes"></div></div>
+      </div>
+      <div class="right">
+        <div class="sc">
+          <div class="sc-label">Community Stats</div>
+          <div class="stat-grid">
+            <div class="stat-box"><div class="stat-num">1.4M</div><div class="stat-lbl">Projects</div></div>
+            <div class="stat-box"><div class="stat-num">2.1M</div><div class="stat-lbl">Creators</div></div>
+            <div class="stat-box"><div class="stat-num">9.8M</div><div class="stat-lbl">Comments</div></div>
+            <div class="stat-box"><div class="stat-num">48k</div><div class="stat-lbl">Today</div></div>
+          </div>
+        </div>
+        <div class="sc"><div class="sc-label">Featured Creators</div><div id="users-list"></div></div>
+        <div class="sc"><div class="sc-label">Tags</div><div class="tag-cloud">
+          <span class="tag">#game</span><span class="tag">#art</span><span class="tag">#platformer</span>
+          <span class="tag">#music</span><span class="tag">#simulator</span><span class="tag">#3d</span>
+          <span class="tag">#rpg</span><span class="tag">#physics</span><span class="tag">#animation</span>
+          <span class="tag">#puzzle</span><span class="tag">#shooter</span><span class="tag">#tutorial</span>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="page-explore" class="page">
+    <div class="hero" style="padding:32px 20px 28px">
+      <h1 style="font-size:clamp(20px,3vw,36px)">Explore Projects</h1>
+      <p style="margin-bottom:0">Browse thousands of projects from creators worldwide</p>
+    </div>
+    <div class="main"><div class="left">
+      <div class="sec"><div class="sec-title"><span class="sec-bar"></span>All Projects</div><div class="pgrid" id="g-explore"></div></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- PROJECT DETAIL MODAL -->
+<div class="overlay" id="ov-detail" onclick="if(event.target===this)closeDetail()">
+  <div class="modal">
+    <div class="mhead">
+      <span class="mtitle" id="detail-modal-title">Loading...</span>
+      <button class="mclose" onclick="closeDetail()">&#x2715;</button>
+    </div>
+    <div class="mbody" id="detail-body">
+      <div style="display:flex;justify-content:center;padding:40px"><div class="loading-spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOOKUP MODAL (manual ID entry) -->
+<div class="overlay" id="ov-lookup" onclick="if(event.target===this)closeLookup()">
+  <div class="modal modal-sm">
+    <div class="mhead">
+      <span class="mtitle">Preview a Project</span>
+      <button class="mclose" onclick="closeLookup()">&#x2715;</button>
+    </div>
+    <div class="mbody">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">Enter a Scratch project URL or ID to fetch its info and play it.</p>
+      <div class="input-row">
+        <input class="url-input" id="lookup-input" placeholder="scratch.mit.edu/projects/104 or just: 104" onkeydown="if(event.key==='Enter')doLookup()">
+        <button class="load-btn" onclick="doLookup()">Load</button>
+      </div>
+      <p class="hint">Project data is fetched live from the Scratch API.</p>
+      <div class="quick-row">
+        <span class="quick-lbl">Try:</span>
+        <span class="tag" onclick="quickLookup('10128407')" style="cursor:pointer">griffpatch Platformer</span>
+        <span class="tag" onclick="quickLookup('60917032')" style="cursor:pointer">Cloud Piano</span>
+        <span class="tag" onclick="quickLookup('104')" style="cursor:pointer">Project #104</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UPLOAD MODAL -->
+<div class="overlay" id="ov-upload" onclick="if(event.target===this)closeUpload()">
+  <div class="modal modal-sm">
+    <div class="mhead"><span class="mtitle">Load .sb3 File</span><button class="mclose" onclick="closeUpload()">&#x2715;</button></div>
+    <div class="mbody">
+      <div id="stage-1">
+        <div class="dz" id="dz" ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)">
+          <input type="file" accept=".sb3,.sb2,.sprite3" id="file-input" onchange="handleFile(this.files[0])">
+          <div class="dz-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round"/><path d="M14 2v6h6M12 12v6M9 15l3-3 3 3" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>Drop your .sb3 file here</h3>
+          <p>or <strong>click to browse</strong> &mdash; .sb3, .sb2, .sprite3</p>
+        </div>
+        <div class="sep">or</div>
+        <button class="load-btn" style="width:100%;padding:10px" onclick="window.open('https://turbowarp.org/editor','_blank')">Open TurboWarp Editor</button>
+      </div>
+      <div id="stage-2" style="display:none">
+        <div class="running-player"><iframe id="sb3-frame" allowfullscreen allow="autoplay; fullscreen"></iframe></div>
+        <div class="btn-row">
+          <button class="load-btn" onclick="resetUpload()">Load another file</button>
+          <button class="sec-btn" onclick="window.open('https://turbowarp.org/editor','_blank')">Edit in TurboWarp</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+// Real project IDs — data fetched live from Scratch API
+const PROJECT_IDS = {
+  featured: ["10128407","60917032","104","292189072","385692118","115303013","403273878","459273775"],
+  trending:  ["498788255","173","734866463","560886869","10128407","292189072","385692118","60917032"],
+  recent:    ["560886869","403273878","459273775","498788255","173","734866463","115303013","104"],
+  loved:     ["459273775","10128407","385692118","115303013","60917032","292189072","734866463","173"],
+  remixes:   ["403273878","498788255","560886869","173","459273775","10128407","292189072","60917032"],
+  explore:   ["10128407","60917032","104","292189072","385692118","115303013","403273878","459273775","498788255","173","734866463","560886869"],
+};
+
+const BADGES = {"10128407":"Hot","60917032":"Featured","104":"Classic","385692118":"Trending","459273775":"Hot"};
+const cache = {};
+
+async function fetchProject(id) {
+  if (cache[id]) return cache[id];
+  try {
+    const r = await fetch(`https://api.scratch.mit.edu/projects/${id}`);
+    if (!r.ok) throw new Error('not ok');
+    const d = await r.json();
+    cache[id] = d;
+    return d;
+  } catch(e) { return null; }
+}
+
+function fmtNum(n) {
+  if (!n && n !== 0) return '—';
+  if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
+  if (n >= 1000) return (n/1000).toFixed(1)+'k';
+  return String(n);
+}
+
+function skeletonCard() {
+  return `<div class="pcard" style="pointer-events:none">
+    <div class="pcard-thumb"><div class="pcard-skel" style="position:absolute;inset:0"></div></div>
+    <div class="pcard-info">
+      <div class="pcard-skel-text" style="width:80%"></div>
+      <div class="pcard-skel-text" style="width:50%;margin-top:4px"></div>
+    </div>
+  </div>`;
+}
+
+async function renderGrid(gridId, ids, badge) {
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = ids.map(()=>skeletonCard()).join('');
+  const projects = await Promise.all(ids.map(id => fetchProject(id)));
+  grid.innerHTML = '';
+  projects.forEach((p, i) => {
+    if (!p) return;
+    const id = ids[i];
+    const thumb = p.image || `https://cdn2.scratch.mit.edu/get_image/project/${id}_480x360.png`;
+    const b = BADGES[id] || '';
+    const card = document.createElement('div');
+    card.className = 'pcard';
+    card.innerHTML = `
+      <div class="pcard-thumb">
+        <div class="pcard-skel" id="sk-${gridId}-${i}" style="position:absolute;inset:0"></div>
+        <img src="${thumb}" alt="${p.title}"
+          onload="const s=document.getElementById('sk-${gridId}-${i}');if(s)s.style.display='none'"
+          onerror="this.style.display='none'">
+        ${b?`<span class="pcard-badge">${b}</span>`:''}
+      </div>
+      <div class="pcard-info">
+        <div class="pcard-name">${p.title}</div>
+        <div class="pcard-author">by ${p.author?.username||'unknown'}</div>
+        <div class="pcard-meta"><span>${fmtNum(p.stats?.views)} views</span><span>${fmtNum(p.stats?.loves)} loves</span></div>
+      </div>`;
+    card.onclick = () => openDetail(id);
+    grid.appendChild(card);
+  });
+}
+
+// Render all grids
+renderGrid('g-featured', PROJECT_IDS.featured);
+renderGrid('g-trending',  PROJECT_IDS.trending);
+renderGrid('g-recent',    PROJECT_IDS.recent);
+renderGrid('g-loved',     PROJECT_IDS.loved);
+renderGrid('g-remixes',   PROJECT_IDS.remixes);
+renderGrid('g-explore',   PROJECT_IDS.explore);
+
+// Featured users from Scratch API
+async function loadUsers() {
+  const names = ['griffpatch','Will_Wam','KIKOMAN590','Paddle2See'];
+  const list = document.getElementById('users-list');
+  for (const name of names) {
+    try {
+      const r = await fetch(`https://api.scratch.mit.edu/users/${name}`);
+      const u = await r.json();
+      const div = document.createElement('div');
+      div.className = 'fu';
+      div.innerHTML = `
+        <div class="fu-av">
+          <img src="${u.profile?.images?.['32x32']||''}" alt="${name}"
+            onerror="this.parentElement.textContent='${name[0].toUpperCase()}'">
+        </div>
+        <div><div class="fu-name">${name}</div><div class="fu-count">${fmtNum(u.history?.joined?new Date(u.history.joined).getFullYear():null)} joined</div></div>`;
+      list.appendChild(div);
+    } catch(e) {
+      const div = document.createElement('div');
+      div.className = 'fu';
+      div.innerHTML = `<div class="fu-av">${name[0].toUpperCase()}</div><div><div class="fu-name">${name}</div></div>`;
+      list.appendChild(div);
+    }
+  }
+}
+loadUsers();
+
+// DETAIL MODAL
+async function openDetail(id) {
+  document.getElementById('ov-detail').classList.add('open');
+  document.getElementById('detail-modal-title').textContent = 'Loading...';
+  document.getElementById('detail-body').innerHTML = '<div style="display:flex;justify-content:center;padding:40px"><div class="loading-spinner"></div></div>';
+
+  const p = await fetchProject(id);
+  if (!p) {
+    document.getElementById('detail-body').innerHTML = '<div class="err-state">Could not load project data.</div>';
+    return;
+  }
+
+  document.getElementById('detail-modal-title').textContent = p.title;
+  const thumb = p.image || `https://cdn2.scratch.mit.edu/get_image/project/${id}_480x360.png`;
+  const desc = p.description || 'No description provided.';
+  const instructions = p.instructions || '';
+  const created = p.history?.created ? new Date(p.history.created).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) : '';
+
+  document.getElementById('detail-body').innerHTML = `
+    <div class="detail-grid">
+      <div>
+        <div class="player-wrap" id="pw-${id}">
+          <div class="player-ph" id="ph-${id}">
+            <div class="player-ph-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M5 3l14 9-14 9V3z" fill="#7c7a99"/></svg></div>
+            <p>Click Play to run this project</p>
+          </div>
+          <iframe id="pf-${id}" style="display:none;width:100%;height:100%;border:none" allowfullscreen allow="autoplay; fullscreen"></iframe>
+        </div>
+        <button class="play-btn" style="margin-top:10px;width:100%" onclick="playProject('${id}')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2l11 6.5L3 15V2z" fill="white"/></svg>
+          Play Project
+        </button>
+      </div>
+      <div class="detail-info">
+        <div>
+          <div class="detail-title">${p.title}</div>
+          <div class="detail-author" style="margin-top:4px">by <span onclick="notify('Opening ${p.author?.username||''}\\'s profile...')">${p.author?.username||'unknown'}</span></div>
+          ${created?`<div class="detail-date" style="margin-top:4px">Shared ${created}</div>`:''}
+        </div>
+        <div class="detail-stats">
+          <div class="ds-box"><div class="ds-num">${fmtNum(p.stats?.views)}</div><div class="ds-lbl">Views</div></div>
+          <div class="ds-box"><div class="ds-num">${fmtNum(p.stats?.loves)}</div><div class="ds-lbl">Loves</div></div>
+          <div class="ds-box"><div class="ds-num">${fmtNum(p.stats?.favorites)}</div><div class="ds-lbl">Favorites</div></div>
+          <div class="ds-box"><div class="ds-num">${fmtNum(p.stats?.remixes)}</div><div class="ds-lbl">Remixes</div></div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Description</div>
+          <div class="detail-desc">${desc}</div>
+        </div>
+        ${instructions?`<div>
+          <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Instructions</div>
+          <div class="detail-desc">${instructions}</div>
+        </div>`:''}
+        <a href="https://scratch.mit.edu/projects/${id}" target="_blank" style="font-size:12px;color:var(--acc3);text-decoration:none">View on Scratch</a>
+      </div>
+    </div>`;
+}
+
+function playProject(id) {
+  const ph = document.getElementById('ph-'+id);
+  const frame = document.getElementById('pf-'+id);
+  if (ph) ph.style.display = 'none';
+  if (frame) { frame.style.display = 'block'; frame.src = `https://turbowarp.org/${id}/embed`; }
+}
+
+function closeDetail() {
+  document.getElementById('ov-detail').classList.remove('open');
+  document.getElementById('detail-body').innerHTML = '';
+}
+
+// LOOKUP
+function extractID(v){v=v.trim();if(/^\d+$/.test(v))return v;const m=v.match(/projects\/(\d+)/);return m?m[1]:null}
+function openLookup(){document.getElementById('ov-lookup').classList.add('open');setTimeout(()=>document.getElementById('lookup-input').focus(),100)}
+function closeLookup(){document.getElementById('ov-lookup').classList.remove('open')}
+function doLookup(){const id=extractID(document.getElementById('lookup-input').value);if(!id){notify('Enter a valid Scratch URL or project ID');return;}closeLookup();openDetail(id)}
+function quickLookup(id){document.getElementById('lookup-input').value=id;doLookup()}
+
+// UPLOAD
+function openUpload(){document.getElementById('ov-upload').classList.add('open')}
+function closeUpload(){document.getElementById('ov-upload').classList.remove('open');resetUpload()}
+function handleFile(file){
+  if(!file)return;
+  if(!file.name.match(/\.(sb3|sb2|sprite3)$/i)){notify('Only .sb3, .sb2, .sprite3 supported');return;}
+  document.getElementById('sb3-frame').src=`https://turbowarp.org/editor?project_url=${encodeURIComponent(URL.createObjectURL(file))}`;
+  document.getElementById('stage-1').style.display='none';
+  document.getElementById('stage-2').style.display='block';
+  notify('Loading '+file.name+'...');
+}
+function resetUpload(){
+  document.getElementById('stage-1').style.display='block';
+  document.getElementById('stage-2').style.display='none';
+  document.getElementById('sb3-frame').src='';
+  document.getElementById('file-input').value='';
+}
+function dzOver(e){e.preventDefault();document.getElementById('dz').classList.add('over')}
+function dzLeave(){document.getElementById('dz').classList.remove('over')}
+function dzDrop(e){e.preventDefault();dzLeave();const f=e.dataTransfer.files[0];if(f)handleFile(f)}
+
+// NAV
+function showPage(n){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+n).classList.add('active')}
+function setNav(n){document.querySelectorAll('.nl').forEach(x=>x.classList.remove('active'));const el=document.getElementById('nav-'+n);if(el)el.classList.add('active')}
+function setTab(el,name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
+  ['featured','trending','recent','loved','remixes'].forEach(n=>{document.getElementById('tab-'+n).style.display=n===name?'block':'none'});
+}
+function openSidebar(){document.getElementById('sidebar').classList.add('open');document.getElementById('sidebar-overlay').classList.add('open');document.body.style.overflow='hidden'}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('open');document.body.style.overflow=''}
+
+let nt;
+function notify(msg){const el=document.getElementById('notif');el.textContent=msg;el.classList.add('show');clearTimeout(nt);nt=setTimeout(()=>el.classList.remove('show'),3200)}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDetail();closeLookup();closeUpload();closeSidebar()}});
+</script>
+</body>
+</html>
