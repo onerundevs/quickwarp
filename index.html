@@ -672,7 +672,25 @@ async function doSignOut() {
 }
 
 // ── PROJECTS ──
-const PROJECT_IDS = {
+// Scratch API is CORS-blocked in browsers with no third-party proxy.
+// Thumbnails come from Scratch CDN (no CORS). Metadata is hardcoded.
+// Player uses Scratch's own embed iframe.
+const PROJECTS = {
+  "10128407": { title:"Griffpatch's Platformer",    author:"griffpatch",      views:"12.1M", loves:"245k", badge:"Hot",      desc:"An amazing platformer game with smooth controls and great level design." },
+  "60917032": { title:"Cloud Piano",                author:"Will_Wam",        views:"3.2M",  loves:"89k",  badge:"Featured", desc:"Play the piano with others in real time using cloud variables." },
+  "104":      { title:"Getting Started",            author:"Scratch Team",    views:"8.1M",  loves:"190k", badge:"Classic",  desc:"The very first official Scratch project. A classic introduction to Scratch." },
+  "292189072":{ title:"Geometry Dash v1.5",         author:"WazzoTV",         views:"5.6M",  loves:"112k", badge:"",         desc:"A fan-made Geometry Dash recreation built entirely in Scratch." },
+  "385692118":{ title:"Among Us but it's Scratch",  author:"KIKOMAN590",      views:"7.8M",  loves:"178k", badge:"Trending", desc:"The viral social deduction game, recreated in Scratch." },
+  "115303013":{ title:"Minecraft Platformer 2",     author:"griffpatch",      views:"9.4M",  loves:"211k", badge:"",         desc:"A Minecraft-inspired platformer with procedurally generated levels." },
+  "403273878":{ title:"3D Maze Engine",             author:"griffpatch_lab",  views:"2.2M",  loves:"54k",  badge:"",         desc:"A raycasting 3D maze engine built from scratch in Scratch." },
+  "459273775":{ title:"Paper Minecraft",            author:"griffpatch",      views:"11M",   loves:"260k", badge:"Hot",      desc:"A full 2D Minecraft clone with crafting, building, and survival." },
+  "498788255":{ title:"Geometry Dash 2.1",          author:"CrystalKeeper7",  views:"4.1M",  loves:"96k",  badge:"",         desc:"A more complete recreation of Geometry Dash with custom levels." },
+  "173":      { title:"Original Scratch Project",   author:"nandothemando",   views:"1.1M",  loves:"22k",  badge:"Classic",  desc:"One of the oldest surviving Scratch projects ever made." },
+  "734866463":{ title:"Squid Game Dalgona",         author:"Hobson-TV",       views:"6.2M",  loves:"143k", badge:"",         desc:"The viral Squid Game dalgona candy challenge recreated in Scratch." },
+  "560886869":{ title:"Among Us Animations",        author:"Paddle2See",      views:"3.8M",  loves:"88k",  badge:"Art",      desc:"A collection of animated Among Us shorts and scenes." },
+};
+
+const TABS = {
   featured: ["10128407","60917032","104","292189072","385692118","115303013","403273878","459273775"],
   trending:  ["498788255","173","734866463","560886869","10128407","292189072","385692118","60917032"],
   recent:    ["560886869","403273878","459273775","498788255","173","734866463","115303013","104"],
@@ -680,25 +698,11 @@ const PROJECT_IDS = {
   remixes:   ["403273878","498788255","560886869","173","459273775","10128407","292189072","60917032"],
   explore:   ["10128407","60917032","104","292189072","385692118","115303013","403273878","459273775","498788255","173","734866463","560886869"],
 };
-const BADGES = {"10128407":"Hot","60917032":"Featured","104":"Classic","385692118":"Trending","459273775":"Hot"};
-const cache = {};
 
-async function fetchProject(id) {
-  if (cache[id]) return cache[id];
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-    const r = await fetch(`https://trampoline.turbowarp.org/api/projects/${id}`, { signal: controller.signal });
-    clearTimeout(timeout);
-    if (!r.ok) return null;
-    const d = await r.json();
-    if (!d || typeof d !== 'object') return null;
-    // trampoline returns Scratch API shape: {id, title, author: {username}, stats: {views,loves}, image, ...}
-    console.log('trampoline response for', id, ':', d);
-    cache[id] = d;
-    return d;
-  } catch(e) { console.error('fetchProject error', id, e); return null; }
-}
+function thumbURL(id) { return `https://cdn2.scratch.mit.edu/get_image/project/${id}_480x360.png`; }
+function fmtNum(n) { return n || '—'; }
+
+// fetchProject removed — using hardcoded data + CDN thumbnails
 
 function fmtNum(n) {
   if (!n && n!==0) return '—';
@@ -717,16 +721,15 @@ function skeletonCard() {
   </div>`;
 }
 
-function makeCardFromData(id, p) {
-  const thumb = (p && p.image) ? p.image : `https://cdn2.scratch.mit.edu/get_image/project/${id}_480x360.png`;
-  const title = (p && p.title) ? p.title : 'Project #'+id;
-  const author = (p && p.author?.username) ? p.author.username : 'Scratch user';
-  const views = fmtNum(p?.stats?.views);
-  const loves = fmtNum(p?.stats?.loves);
-  const b = BADGES[id] || '';
+function makeCard(id) {
+  const p = PROJECTS[id] || {};
+  const title = p.title || 'Project #'+id;
+  const author = p.author || 'Scratch user';
+  const thumb = thumbURL(id);
+  const b = p.badge || '';
+  const uid = id + '_' + Math.random().toString(36).slice(2,6);
   const card = document.createElement('div');
   card.className = 'pcard';
-  const uid = id + '_' + Math.random().toString(36).slice(2,6);
   card.innerHTML = `
     <div class="pcard-thumb">
       <div class="pcard-skel" id="sk-${uid}" style="position:absolute;inset:0"></div>
@@ -738,33 +741,17 @@ function makeCardFromData(id, p) {
     <div class="pcard-info">
       <div class="pcard-name">${title}</div>
       <div class="pcard-author">by ${author}</div>
-      <div class="pcard-meta"><span>${views} views</span><span>${loves} loves</span></div>
+      <div class="pcard-meta"><span>${p.views||'—'} views</span><span>${p.loves||'—'} loves</span></div>
     </div>`;
   card.onclick = () => openDetail(id);
   return card;
 }
 
-async function renderGrid(gridId, ids) {
+function renderGrid(gridId, ids) {
   const grid = document.getElementById(gridId);
   if (!grid) return;
-  // Show skeletons first
-  grid.innerHTML = ids.map(()=>skeletonCard()).join('');
-  // Fetch all, but show each card as soon as it resolves (don't wait for all)
   grid.innerHTML = '';
-  // First pass: show cards with just thumbnails immediately
-  ids.forEach(id => {
-    const card = makeCardFromData(id, null);
-    grid.appendChild(card);
-  });
-  // Second pass: enrich with API data as it comes in
-  ids.forEach(async (id, i) => {
-    const p = await fetchProject(id);
-    if (!p) return; // keep fallback card as-is
-    const oldCard = grid.children[i];
-    if (!oldCard) return;
-    const newCard = makeCardFromData(id, p);
-    grid.replaceChild(newCard, oldCard);
-  });
+  ids.forEach(id => grid.appendChild(makeCard(id)));
 }
 
 renderGrid('g-featured', PROJECT_IDS.featured);
@@ -774,46 +761,35 @@ renderGrid('g-loved',     PROJECT_IDS.loved);
 renderGrid('g-remixes',   PROJECT_IDS.remixes);
 renderGrid('g-explore',   PROJECT_IDS.explore);
 
-async function loadUsers() {
-  const names = ['griffpatch','Will_Wam','KIKOMAN590','Paddle2See'];
+function loadUsers() {
+  const users = [
+    {name:'griffpatch',    initials:'G'},
+    {name:'Will_Wam',      initials:'W'},
+    {name:'KIKOMAN590',    initials:'K'},
+    {name:'Paddle2See',    initials:'P'},
+  ];
   const list = document.getElementById('users-list');
-  for (const name of names) {
-    try {
-      const r = await fetch(`https://trampoline.turbowarp.org/proxy/users/${name}`);
-      const u = await r.json();
-      const div = document.createElement('div');
-      div.className = 'fu';
-      div.innerHTML = `
-        <div class="fu-av"><img src="${u.profile?.images?.['32x32']||''}" alt="${name}" onerror="this.parentElement.textContent='${name[0].toUpperCase()}'"></div>
-        <div><div class="fu-name">${name}</div><div class="fu-count">Scratch creator</div></div>`;
-      list.appendChild(div);
-    } catch(e) {}
-  }
+  users.forEach(u => {
+    const div = document.createElement('div');
+    div.className = 'fu';
+    div.innerHTML = `
+      <div class="fu-av" style="background:var(--acc)">${u.initials}</div>
+      <div><div class="fu-name">${u.name}</div><div class="fu-count">Scratch creator</div></div>`;
+    list.appendChild(div);
+  });
 }
 loadUsers();
 
 // ── DETAIL ──
-async function openDetail(id) {
+function openDetail(id) {
+  const p = PROJECTS[id] || {};
+  const title = p.title || 'Project #'+id;
+  const author = p.author || 'unknown';
+  const desc = p.desc || 'No description provided.';
+  const thumb = thumbURL(id);
+
   document.getElementById('ov-detail').classList.add('open');
-  document.getElementById('detail-modal-title').textContent = 'Loading...';
-  document.getElementById('detail-body').innerHTML = '<div style="display:flex;justify-content:center;padding:40px"><div class="loading-spinner" style="width:24px;height:24px;border-width:3px;border-color:var(--border);border-top-color:var(--acc)"></div></div>';
-  const p = await fetchProject(id);
-  if (!p || !p.title) {
-    // Try opening directly on Scratch as fallback
-    document.getElementById('detail-body').innerHTML = `<div class="err-state" style="padding:32px;text-align:center">
-      <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Could not load project data from API.</p>
-      <a href="https://scratch.mit.edu/projects/${id}" target="_blank" rel="noopener"
-         style="display:inline-block;padding:9px 18px;background:var(--acc);color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">
-        View on Scratch instead
-      </a>
-    </div>`;
-    return;
-  }
-  document.getElementById('detail-modal-title').textContent = p.title;
-  const thumb = p.image || `https://cdn2.scratch.mit.edu/get_image/project/${id}_480x360.png`;
-  const desc = p.description || 'No description provided.';
-  const instructions = p.instructions || '';
-  const created = p.history?.created ? new Date(p.history.created).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) : '';
+  document.getElementById('detail-modal-title').textContent = title;
   document.getElementById('detail-body').innerHTML = `
     <div class="detail-grid">
       <div>
@@ -831,24 +807,17 @@ async function openDetail(id) {
       </div>
       <div class="detail-info">
         <div>
-          <div class="detail-title">${p.title}</div>
-          <div class="detail-author" style="margin-top:4px">by <span>${p.author?.username||'unknown'}</span></div>
-          ${created?`<div class="detail-date" style="margin-top:4px">Shared ${created}</div>`:''}
+          <div class="detail-title">${title}</div>
+          <div class="detail-author" style="margin-top:4px">by <span>${author}</span></div>
         </div>
         <div class="detail-stats">
-          <div class="ds-box"><div class="ds-num">${fmtNum(p.stats?.views)}</div><div class="ds-lbl">Views</div></div>
-          <div class="ds-box"><div class="ds-num">${fmtNum(p.stats?.loves)}</div><div class="ds-lbl">Loves</div></div>
-          <div class="ds-box"><div class="ds-num">${fmtNum(p.stats?.favorites)}</div><div class="ds-lbl">Favorites</div></div>
-          <div class="ds-box"><div class="ds-num">${fmtNum(p.stats?.remixes)}</div><div class="ds-lbl">Remixes</div></div>
+          <div class="ds-box"><div class="ds-num">${p.views||'—'}</div><div class="ds-lbl">Views</div></div>
+          <div class="ds-box"><div class="ds-num">${p.loves||'—'}</div><div class="ds-lbl">Loves</div></div>
         </div>
         <div>
           <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Description</div>
           <div class="detail-desc">${desc}</div>
         </div>
-        ${instructions?`<div>
-          <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Instructions</div>
-          <div class="detail-desc">${instructions}</div>
-        </div>`:''}
         <a href="https://scratch.mit.edu/projects/${id}" target="_blank" rel="noopener" style="font-size:12px;color:var(--acc3);text-decoration:none">View on Scratch</a>
       </div>
     </div>`;
@@ -858,7 +827,7 @@ function playProject(id) {
   const ph = document.getElementById('ph-'+id);
   const frame = document.getElementById('pf-'+id);
   if (ph) ph.style.display='none';
-  if (frame) { frame.style.display='block'; frame.src=`https://turbowarp.org/${id}/embed`; }
+  if (frame) { frame.style.display='block'; frame.src=`https://scratch.mit.edu/projects/${id}/embed`; }
 }
 function closeDetail() { document.getElementById('ov-detail').classList.remove('open'); document.getElementById('detail-body').innerHTML=''; }
 
@@ -866,7 +835,14 @@ function closeDetail() { document.getElementById('ov-detail').classList.remove('
 function extractID(v){v=v.trim();if(/^\d+$/.test(v))return v;const m=v.match(/projects\/(\d+)/);return m?m[1]:null}
 function openLookup(){document.getElementById('ov-lookup').classList.add('open');setTimeout(()=>document.getElementById('lookup-input').focus(),100)}
 function closeLookup(){document.getElementById('ov-lookup').classList.remove('open')}
-function doLookup(){const id=extractID(document.getElementById('lookup-input').value);if(!id){notify('Enter a valid Scratch URL or project ID');return;}closeLookup();openDetail(id)}
+function doLookup(){
+  const id=extractID(document.getElementById('lookup-input').value);
+  if(!id){notify('Enter a valid Scratch URL or project ID');return;}
+  closeLookup();
+  // If not in our known projects, create a temporary entry
+  if(!PROJECTS[id]) PROJECTS[id]={title:'Project #'+id, author:'Scratch user', views:'—', loves:'—', desc:'A Scratch project.'};
+  openDetail(id);
+}
 function quickLookup(id){document.getElementById('lookup-input').value=id;doLookup()}
 
 // ── UPLOAD ──
@@ -930,7 +906,7 @@ async function goScratchStep2() {
   btn.disabled=true; btn.innerHTML='<div class="loading-spinner"></div> Checking...';
 
   try {
-    const r = await fetch(`https://trampoline.turbowarp.org/proxy/users/${encodeURIComponent(username)}`);
+    const r = await fetch(`https://api.scratch.mit.edu/users/${encodeURIComponent(username)}`);
     if (!r.ok) throw new Error('not found');
     const u = await r.json();
 
@@ -994,7 +970,7 @@ async function verifyScratch(scratchUsername) {
 
   try {
     // Use Scratch proxy to avoid CORS — fetch user profile
-    const r = await fetch(`https://trampoline.turbowarp.org/proxy/users/${encodeURIComponent(scratchUsername)}`);
+    const r = await fetch(`https://api.scratch.mit.edu/users/${encodeURIComponent(scratchUsername)}`);
     const u = await r.json();
     const aboutMe = u.profile?.bio || '';
     const status = u.profile?.status || '';
