@@ -3,7 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="QuickWarp — The most powerful Scratch mod. Create anything, share everything.">
+<meta property="og:title" content="QuickWarp">
+<meta property="og:description" content="Create anything. Share everything. The most powerful Scratch mod.">
+<meta property="og:url" content="https://onerundevs.github.io/quickwarp/">
+<meta name="theme-color" content="#7c3aed">
+<title>QuickWarp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -13,16 +22,18 @@
   --text:#f1f0ff;--muted:#7c7a99;--border:rgba(124,58,237,.18);
   --font:'Inter',sans-serif;--sidebar-w:240px;
 }
+html,body{height:100%}
 body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--s1)}
 ::-webkit-scrollbar-thumb{background:var(--acc);border-radius:3px}
 
-/* SIDEBAR */
+/* ── SIDEBAR ── */
 .sidebar{position:fixed;top:0;left:0;height:100%;width:var(--sidebar-w);background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:300;transition:transform .25s cubic-bezier(.4,0,.2,1)}
 .sidebar-head{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;border-bottom:1px solid var(--border);flex-shrink:0}
-.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;cursor:pointer;color:var(--text)}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:16px;cursor:pointer;color:var(--text);user-select:none}
 .logo-mark{width:26px;height:26px;background:var(--acc);border-radius:7px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px var(--glow);flex-shrink:0}
+.logo-mark svg{display:block}
 .sidebar-close{display:none;background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:5px;line-height:1}
 .sidebar-close:hover{background:var(--s3);color:var(--text)}
 .sidebar-nav{padding:10px 8px;flex:1;overflow-y:auto}
@@ -33,27 +44,37 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .nl.active{color:var(--acc3)}
 .nl.active svg{opacity:1}
 .sidebar-bottom{padding:12px 8px;border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:6px}
+.user-pill{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;background:var(--s2);border:1px solid var(--border);cursor:pointer;transition:.12s}
+.user-pill:hover{border-color:rgba(157,95,254,.4);background:var(--s3)}
+.user-av{width:28px;height:28px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden}
+.user-av img{width:100%;height:100%;object-fit:cover}
+.user-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-email{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── BUTTONS ── */
 .btn{padding:8px 14px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:var(--font);transition:.13s;width:100%;text-align:center}
 .btn-outline{background:transparent;color:var(--muted);border:1px solid var(--border)}
 .btn-outline:hover{background:var(--s2);color:var(--text)}
 .btn-acc{background:var(--acc);color:#fff;box-shadow:0 0 12px var(--glow)}
 .btn-acc:hover{background:var(--acc2)}
+.btn-danger{background:transparent;color:#f87171;border:1px solid rgba(248,113,113,.25)}
+.btn-danger:hover{background:rgba(248,113,113,.08)}
 
-/* TOPBAR */
+/* ── TOPBAR ── */
 .topbar{display:none;position:sticky;top:0;z-index:200;align-items:center;height:52px;padding:0 14px;gap:10px;background:rgba(13,13,18,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
 .hamburger{background:none;border:none;color:var(--text);cursor:pointer;padding:4px;border-radius:6px;display:flex;flex-direction:column;gap:4px;flex-shrink:0}
 .hamburger span{display:block;width:20px;height:2px;background:currentColor;border-radius:2px}
-.topbar-logo{display:flex;align-items:center;gap:7px;font-weight:700;font-size:15px;color:var(--text);cursor:pointer}
+.topbar-logo{display:flex;align-items:center;gap:7px;font-weight:700;font-size:15px;color:var(--text);cursor:pointer;user-select:none}
 .topbar-search{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:7px;padding:7px 11px;font-size:13px;color:var(--text);font-family:var(--font);outline:none}
 .topbar-search:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--glow2)}
 .topbar-search::placeholder{color:var(--muted)}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:299;backdrop-filter:blur(2px)}
 .sidebar-overlay.open{display:block}
 
-/* CONTENT */
+/* ── CONTENT ── */
 .content{margin-left:var(--sidebar-w);min-height:100vh}
 
-/* HERO */
+/* ── HERO ── */
 .hero{text-align:center;padding:48px 20px 36px;background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(124,58,237,.2) 0%,transparent 70%);border-bottom:1px solid var(--border)}
 .hero h1{font-size:clamp(24px,3.5vw,50px);font-weight:700;line-height:1.1;margin-bottom:12px;background:linear-gradient(135deg,#fff 30%,var(--acc3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .hero p{color:var(--muted);font-size:14px;max-width:420px;margin:0 auto 22px;line-height:1.6}
@@ -64,14 +85,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .hbtn-o{background:transparent;color:var(--text);border:1px solid var(--border)}
 .hbtn-o:hover{background:var(--s2)}
 
-/* TABS */
+/* ── TABS ── */
 .tabs-bar{display:flex;padding:0 16px;background:var(--s1);border-bottom:1px solid var(--border);overflow-x:auto}
 .tabs-bar::-webkit-scrollbar{height:0}
 .tab{padding:11px 16px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:.12s;user-select:none}
 .tab:hover{color:var(--text)}
 .tab.active{color:var(--acc3);border-bottom-color:var(--acc)}
 
-/* MAIN */
+/* ── MAIN LAYOUT ── */
 .main{max-width:1100px;margin:0 auto;padding:22px 18px;display:flex;gap:22px}
 .left{flex:1;min-width:0}
 .right{width:260px;flex-shrink:0}
@@ -79,11 +100,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .sec-title{font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:13px;display:flex;align-items:center;gap:8px}
 .sec-bar{width:3px;height:14px;background:var(--acc);border-radius:2px;box-shadow:0 0 7px var(--acc);flex-shrink:0}
 
-/* PROJECT CARDS */
+/* ── PROJECT CARDS ── */
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:13px}
 .pcard{background:var(--s1);border:1px solid var(--border);border-radius:11px;overflow:hidden;cursor:pointer;transition:.15s}
 .pcard:hover{border-color:rgba(157,95,254,.5);transform:translateY(-2px);box-shadow:0 8px 28px rgba(124,58,237,.2)}
-.pcard-thumb{width:100%;aspect-ratio:4/3;position:relative;overflow:hidden;background:var(--s2);display:flex;align-items:center;justify-content:center}
+.pcard-thumb{width:100%;aspect-ratio:4/3;position:relative;overflow:hidden;background:var(--s2)}
 .pcard-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:.2s}
 .pcard:hover .pcard-thumb img{transform:scale(1.04)}
 .pcard-skel{position:absolute;inset:0;background:linear-gradient(90deg,var(--s2) 25%,var(--s3) 50%,var(--s2) 75%);background-size:200% 100%;animation:skel 1.4s infinite}
@@ -95,7 +116,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .pcard-meta{display:flex;gap:10px;margin-top:6px;font-size:11px;color:var(--muted)}
 .pcard-skel-text{height:11px;border-radius:4px;background:var(--s3);margin-top:6px;animation:skel 1.4s infinite;background-size:200% 100%}
 
-/* SIDEBAR WIDGETS */
+/* ── SIDEBAR WIDGETS ── */
 .sc{background:var(--s1);border:1px solid var(--border);border-radius:11px;padding:14px;margin-bottom:13px}
 .sc-label{font-size:10.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:11px}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
@@ -112,18 +133,43 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .fu-name{font-size:13px;font-weight:500}
 .fu-count{font-size:11px;color:var(--muted)}
 
-/* PROJECT DETAIL MODAL */
+/* ── MODALS ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:500;display:none;align-items:center;justify-content:center;padding:12px;backdrop-filter:blur(6px)}
 .overlay.open{display:flex}
 .modal{background:var(--s1);border:1px solid rgba(124,58,237,.35);border-radius:14px;width:100%;max-width:860px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 80px rgba(124,58,237,.28)}
-.modal-sm{max-width:500px}
+.modal-sm{max-width:440px}
 .mhead{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border);background:var(--s2);flex-shrink:0}
 .mtitle{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 40px)}
 .mclose{cursor:pointer;color:var(--muted);font-size:17px;padding:4px 8px;border-radius:5px;transition:.12s;line-height:1;background:none;border:none;font-family:var(--font);flex-shrink:0}
 .mclose:hover{background:var(--s3);color:var(--text)}
-.mbody{padding:16px;overflow-y:auto;flex:1}
+.mbody{padding:20px;overflow-y:auto;flex:1}
 
-/* PROJECT DETAIL LAYOUT */
+/* ── AUTH MODAL ── */
+.auth-tabs{display:flex;gap:0;margin-bottom:20px;background:var(--s2);border-radius:9px;padding:3px}
+.auth-tab{flex:1;padding:8px;text-align:center;border-radius:7px;font-size:13.5px;font-weight:500;cursor:pointer;transition:.13s;color:var(--muted)}
+.auth-tab.active{background:var(--acc);color:#fff;box-shadow:0 0 12px var(--glow)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.field input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13.5px;color:var(--text);font-family:var(--font);outline:none;transition:.13s}
+.field input:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--glow2)}
+.field input::placeholder{color:var(--muted)}
+.auth-err{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:8px;padding:10px 12px;font-size:12.5px;color:#fca5a5;margin-bottom:14px;display:none}
+.auth-err.show{display:block}
+.auth-success{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);border-radius:8px;padding:10px 12px;font-size:12.5px;color:#6ee7b7;margin-bottom:14px;display:none}
+.auth-success.show{display:block}
+.auth-submit{width:100%;padding:10px;border-radius:8px;font-size:14px;font-weight:600;background:var(--acc);color:#fff;border:none;cursor:pointer;font-family:var(--font);transition:.14s;box-shadow:0 0 14px var(--glow);display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px}
+.auth-submit:hover{background:var(--acc2)}
+.auth-submit:disabled{opacity:.5;cursor:not-allowed}
+.hcaptcha-wrap{display:flex;justify-content:center;margin:12px 0}
+
+/* ── EMAIL VERIFY SCREEN ── */
+.verify-screen{text-align:center;padding:8px 0}
+.verify-icon{width:60px;height:60px;border-radius:14px;background:var(--s2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.verify-screen h2{font-size:18px;font-weight:700;margin-bottom:8px}
+.verify-screen p{font-size:13.5px;color:var(--muted);line-height:1.6;max-width:320px;margin:0 auto 20px}
+.verify-email-badge{display:inline-block;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;color:var(--acc3);font-weight:500;margin-bottom:20px}
+
+/* ── DETAIL MODAL ── */
 .detail-grid{display:grid;grid-template-columns:1fr 280px;gap:16px}
 @media(max-width:620px){.detail-grid{grid-template-columns:1fr}}
 .player-wrap{width:100%;aspect-ratio:4/3;background:#000;border-radius:10px;overflow:hidden;border:1px solid var(--border);position:relative}
@@ -134,21 +180,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .detail-info{display:flex;flex-direction:column;gap:12px}
 .detail-title{font-size:18px;font-weight:700;line-height:1.2}
 .detail-author{font-size:13px;color:var(--muted)}
-.detail-author span{color:var(--acc3);cursor:pointer}
+.detail-author span{color:var(--acc3)}
 .detail-stats{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .ds-box{background:var(--s2);border-radius:8px;padding:10px 12px;border:1px solid var(--border)}
 .ds-num{font-size:16px;font-weight:700;color:var(--acc3)}
 .ds-lbl{font-size:10.5px;color:var(--muted);margin-top:1px}
 .detail-desc{background:var(--s2);border-radius:8px;padding:12px;border:1px solid var(--border);font-size:13px;color:var(--muted);line-height:1.6;max-height:120px;overflow-y:auto}
-.detail-desc::-webkit-scrollbar{width:3px}
-.detail-desc::-webkit-scrollbar-thumb{background:var(--acc)}
-.play-btn{padding:11px;border-radius:8px;font-size:13.5px;font-weight:600;background:var(--acc);color:#fff;border:none;cursor:pointer;font-family:var(--font);transition:.14s;box-shadow:0 0 14px var(--glow);display:flex;align-items:center;justify-content:center;gap:8px}
-.play-btn:hover{background:var(--acc2);box-shadow:0 0 22px var(--glow)}
-.play-btn svg{flex-shrink:0}
-.detail-tags{display:flex;flex-wrap:wrap;gap:5px}
+.play-btn{padding:11px;border-radius:8px;font-size:13.5px;font-weight:600;background:var(--acc);color:#fff;border:none;cursor:pointer;font-family:var(--font);transition:.14s;box-shadow:0 0 14px var(--glow);display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
+.play-btn:hover{background:var(--acc2)}
 .detail-date{font-size:11.5px;color:var(--muted)}
 
-/* PREVIEW INPUT MODAL */
+/* ── LOOKUP / UPLOAD ── */
 .input-row{display:flex;gap:7px;margin-bottom:9px}
 .url-input{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;transition:.13s;min-width:0}
 .url-input:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--glow2)}
@@ -158,8 +200,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .hint{font-size:11.5px;color:var(--muted);margin-bottom:12px;line-height:1.5}
 .quick-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:4px}
 .quick-lbl{font-size:11.5px;color:var(--muted)}
-
-/* UPLOAD */
 .dz{border:2px dashed rgba(124,58,237,.3);border-radius:10px;padding:28px 16px;text-align:center;cursor:pointer;transition:.15s;position:relative}
 .dz:hover,.dz.over{border-color:var(--acc);background:var(--glow2)}
 .dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
@@ -175,13 +215,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 .sec-btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font);transition:.13s;border:1px solid var(--border);background:var(--s2);color:var(--text)}
 .sec-btn:hover{background:var(--s3)}
 
-.notif{position:fixed;bottom:20px;right:20px;z-index:1000;background:var(--s2);border:1px solid rgba(157,95,254,.4);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--text);box-shadow:0 4px 24px rgba(124,58,237,.22);transform:translateY(60px);opacity:0;transition:.26s cubic-bezier(.34,1.56,.64,1);pointer-events:none}
+/* ── MISC ── */
+.loading-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.notif{position:fixed;bottom:20px;right:20px;z-index:1000;background:var(--s2);border:1px solid rgba(157,95,254,.4);border-radius:10px;padding:10px 16px;font-size:13px;color:var(--text);box-shadow:0 4px 24px rgba(124,58,237,.22);transform:translateY(60px);opacity:0;transition:.26s cubic-bezier(.34,1.56,.64,1);pointer-events:none;max-width:300px}
 .notif.show{transform:translateY(0);opacity:1}
 .page{display:none}.page.active{display:block}
-.loading-spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
 .err-state{text-align:center;padding:32px;color:var(--muted);font-size:13px}
 
+/* ── RESPONSIVE ── */
 @media(max-width:900px){.right{display:none}}
 @media(max-width:700px){
   .sidebar{transform:translateX(calc(-1 * var(--sidebar-w)))}
@@ -196,6 +238,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 </head>
 <body>
 
+<!-- ── SIDEBAR ── -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-head">
     <div class="logo" onclick="showPage('home');setNav('home');closeSidebar()">
@@ -215,24 +258,21 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     <div class="nl" onclick="openUpload();closeSidebar()">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Create
     </div>
-    <div class="nl" onclick="notify('Ideas coming soon');closeSidebar()">
+    <div class="nl" onclick="notify('Ideas coming soon')">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 011.5 7.7V11H6.5V9.7A4 4 0 018 2zM6.5 12.5h3M7 14.5h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Ideas
     </div>
-    <div class="nl" onclick="notify('About coming soon');closeSidebar()">
+    <div class="nl" onclick="notify('About coming soon')">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 7v5M8 5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>About
     </div>
     <div class="nav-section" style="margin-top:8px">Account</div>
-    <div class="nl" onclick="notify('Sign in coming soon');closeSidebar()">
-      <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Sign in
-    </div>
+    <div id="sidebar-auth-area"></div>
   </div>
-  <div class="sidebar-bottom">
-    <button class="btn btn-acc" onclick="notify('Join today!')">Join QuickWarp</button>
-  </div>
+  <div class="sidebar-bottom" id="sidebar-bottom-area"></div>
 </aside>
 
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
+<!-- ── TOPBAR ── -->
 <div class="topbar" id="topbar">
   <button class="hamburger" onclick="openSidebar()"><span></span><span></span><span></span></button>
   <div class="topbar-logo" onclick="showPage('home');setNav('home')">
@@ -242,7 +282,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   <input class="topbar-search" type="text" placeholder="Search..." onkeydown="if(event.key==='Enter')notify('Search: '+this.value)">
 </div>
 
+<!-- ── PAGES ── -->
 <div class="content">
+
+  <!-- HOME -->
   <div id="page-home" class="page active">
     <div class="hero">
       <h1>Create anything.<br>Share everything.</h1>
@@ -288,6 +331,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
     </div>
   </div>
 
+  <!-- EXPLORE -->
   <div id="page-explore" class="page">
     <div class="hero" style="padding:32px 20px 28px">
       <h1 style="font-size:clamp(20px,3vw,36px)">Explore Projects</h1>
@@ -297,9 +341,62 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
       <div class="sec"><div class="sec-title"><span class="sec-bar"></span>All Projects</div><div class="pgrid" id="g-explore"></div></div>
     </div></div>
   </div>
+
 </div>
 
-<!-- PROJECT DETAIL MODAL -->
+<!-- ── AUTH MODAL ── -->
+<div class="overlay" id="ov-auth" onclick="if(event.target===this)closeAuth()">
+  <div class="modal modal-sm">
+    <div class="mhead">
+      <span class="mtitle">Welcome to QuickWarp</span>
+      <button class="mclose" onclick="closeAuth()">&#x2715;</button>
+    </div>
+    <div class="mbody" id="auth-body">
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="tab-signin" onclick="switchAuthTab('signin')">Sign in</div>
+        <div class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Create account</div>
+      </div>
+      <div id="auth-err" class="auth-err"></div>
+      <div id="auth-success" class="auth-success"></div>
+
+      <!-- SIGN IN -->
+      <div id="form-signin">
+        <div class="field"><label>Email</label><input type="email" id="si-email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doSignIn()"></div>
+        <div class="field"><label>Password</label><input type="password" id="si-password" placeholder="Your password" onkeydown="if(event.key==='Enter')doSignIn()"></div>
+        <div class="hcaptcha-wrap"><div class="h-captcha" id="hcap-signin" data-sitekey="daa443fa-cd1e-4b18-a31a-9eca35fa61aa" data-theme="dark"></div></div>
+        <button class="auth-submit" id="btn-signin" onclick="doSignIn()">Sign in</button>
+        <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:12px;cursor:pointer" onclick="switchAuthTab('signup')">No account? Create one</p>
+      </div>
+
+      <!-- SIGN UP -->
+      <div id="form-signup" style="display:none">
+        <div class="field"><label>Username</label><input type="text" id="su-username" placeholder="coolcreator" onkeydown="if(event.key==='Enter')doSignUp()"></div>
+        <div class="field"><label>Email</label><input type="email" id="su-email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doSignUp()"></div>
+        <div class="field"><label>Password</label><input type="password" id="su-password" placeholder="At least 6 characters" onkeydown="if(event.key==='Enter')doSignUp()"></div>
+        <div class="hcaptcha-wrap"><div class="h-captcha" id="hcap-signup" data-sitekey="daa443fa-cd1e-4b18-a31a-9eca35fa61aa" data-theme="dark"></div></div>
+        <button class="auth-submit" id="btn-signup" onclick="doSignUp()">Create account</button>
+        <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:12px;cursor:pointer" onclick="switchAuthTab('signin')">Already have an account? Sign in</p>
+      </div>
+
+      <!-- EMAIL VERIFY -->
+      <div id="form-verify" style="display:none">
+        <div class="verify-screen">
+          <div class="verify-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h2>Check your email</h2>
+          <p>We sent a confirmation link to:</p>
+          <div class="verify-email-badge" id="verify-email-display"></div>
+          <p>Click the link in the email to activate your account. Check your spam folder if you don't see it.</p>
+          <button class="auth-submit" onclick="closeAuth()">Done</button>
+          <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:12px;cursor:pointer" onclick="resendVerification()">Resend email</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── DETAIL MODAL ── -->
 <div class="overlay" id="ov-detail" onclick="if(event.target===this)closeDetail()">
   <div class="modal">
     <div class="mhead">
@@ -307,22 +404,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
       <button class="mclose" onclick="closeDetail()">&#x2715;</button>
     </div>
     <div class="mbody" id="detail-body">
-      <div style="display:flex;justify-content:center;padding:40px"><div class="loading-spinner"></div></div>
+      <div style="display:flex;justify-content:center;padding:40px"><div class="loading-spinner" style="width:24px;height:24px;border-width:3px;border-color:var(--border);border-top-color:var(--acc)"></div></div>
     </div>
   </div>
 </div>
 
-<!-- LOOKUP MODAL (manual ID entry) -->
+<!-- ── LOOKUP MODAL ── -->
 <div class="overlay" id="ov-lookup" onclick="if(event.target===this)closeLookup()">
   <div class="modal modal-sm">
-    <div class="mhead">
-      <span class="mtitle">Preview a Project</span>
-      <button class="mclose" onclick="closeLookup()">&#x2715;</button>
-    </div>
+    <div class="mhead"><span class="mtitle">Preview a Project</span><button class="mclose" onclick="closeLookup()">&#x2715;</button></div>
     <div class="mbody">
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">Enter a Scratch project URL or ID to fetch its info and play it.</p>
       <div class="input-row">
-        <input class="url-input" id="lookup-input" placeholder="scratch.mit.edu/projects/104 or just: 104" onkeydown="if(event.key==='Enter')doLookup()">
+        <input class="url-input" id="lookup-input" placeholder="scratch.mit.edu/projects/104 or: 104" onkeydown="if(event.key==='Enter')doLookup()">
         <button class="load-btn" onclick="doLookup()">Load</button>
       </div>
       <p class="hint">Project data is fetched live from the Scratch API.</p>
@@ -336,7 +430,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
   </div>
 </div>
 
-<!-- UPLOAD MODAL -->
+<!-- ── UPLOAD MODAL ── -->
 <div class="overlay" id="ov-upload" onclick="if(event.target===this)closeUpload()">
   <div class="modal modal-sm">
     <div class="mhead"><span class="mtitle">Load .sb3 File</span><button class="mclose" onclick="closeUpload()">&#x2715;</button></div>
@@ -365,7 +459,182 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
 <div class="notif" id="notif"></div>
 
 <script>
-// Real project IDs — data fetched live from Scratch API
+// ── SUPABASE ──
+const { createClient } = supabase;
+const sb = createClient(
+  'https://enopenfiimjasscwrggf.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVub3BlbmZpaW1qYXNzY3dyZ2dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODIwOTQsImV4cCI6MjA4OTE1ODA5NH0._3UFofXPax_TkYPUbc3Ck4EMr2qHceZH31n-yy7vdRk'
+);
+
+// ── AUTH STATE ──
+let currentUser = null;
+let currentProfile = null;
+let pendingVerifyEmail = null;
+
+async function loadProfile(userId) {
+  const { data } = await sb.from('profiles').select('*').eq('id', userId).single();
+  return data;
+}
+
+function renderSidebarAuth() {
+  const authArea = document.getElementById('sidebar-auth-area');
+  const bottomArea = document.getElementById('sidebar-bottom-area');
+  if (currentUser && currentProfile) {
+    const initials = currentProfile.username.slice(0,2).toUpperCase();
+    authArea.innerHTML = `
+      <div class="user-pill">
+        <div class="user-av">${initials}</div>
+        <div style="min-width:0">
+          <div class="user-name">${currentProfile.username}</div>
+          <div class="user-email">${currentUser.email}</div>
+        </div>
+      </div>
+      <div class="nl" style="margin-top:4px" onclick="notify('Profile page coming soon')">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>My Profile
+      </div>
+      <div class="nl" onclick="notify('Your projects coming soon')">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6 6h4M6 9h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>My Projects
+      </div>`;
+    bottomArea.innerHTML = `<button class="btn btn-danger" onclick="doSignOut()">Sign out</button>`;
+  } else {
+    authArea.innerHTML = `
+      <div class="nl" onclick="openAuth('signin')">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Sign in
+      </div>`;
+    bottomArea.innerHTML = `<button class="btn btn-acc" onclick="openAuth('signup')">Join QuickWarp</button>`;
+  }
+}
+
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_IN' && session?.user) {
+    currentUser = session.user;
+    currentProfile = await loadProfile(session.user.id);
+    if (!currentProfile && session.user.user_metadata?.username) {
+      await sb.from('profiles').upsert({ id: session.user.id, username: session.user.user_metadata.username });
+      currentProfile = await loadProfile(session.user.id);
+    }
+    notify('Welcome' + (currentProfile ? ', ' + currentProfile.username : '') + '!');
+    closeAuth();
+  } else if (event === 'SIGNED_OUT') {
+    currentUser = null;
+    currentProfile = null;
+  }
+  renderSidebarAuth();
+});
+
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    currentUser = session.user;
+    currentProfile = await loadProfile(session.user.id);
+  }
+  renderSidebarAuth();
+})();
+
+// ── AUTH MODAL ──
+function openAuth(tab='signin') {
+  document.getElementById('ov-auth').classList.add('open');
+  showAuthForm(tab === 'signup' ? 'signup' : 'signin');
+  clearAuthMessages();
+}
+function closeAuth() { document.getElementById('ov-auth').classList.remove('open') }
+
+function showAuthForm(form) {
+  ['signin','signup','verify'].forEach(f => {
+    document.getElementById('form-'+f).style.display = f===form ? 'block' : 'none';
+  });
+  if (form !== 'verify') {
+    document.getElementById('tab-signin').classList.toggle('active', form==='signin');
+    document.getElementById('tab-signup').classList.toggle('active', form==='signup');
+    document.querySelector('.auth-tabs').style.display = 'flex';
+  } else {
+    document.querySelector('.auth-tabs').style.display = 'none';
+  }
+}
+
+function switchAuthTab(tab) { showAuthForm(tab); clearAuthMessages(); }
+
+function showAuthErr(msg) {
+  const el = document.getElementById('auth-err');
+  el.textContent = msg; el.classList.add('show');
+  document.getElementById('auth-success').classList.remove('show');
+}
+function showAuthSuccess(msg) {
+  const el = document.getElementById('auth-success');
+  el.textContent = msg; el.classList.add('show');
+  document.getElementById('auth-err').classList.remove('show');
+}
+function clearAuthMessages() {
+  document.getElementById('auth-err').classList.remove('show');
+  document.getElementById('auth-success').classList.remove('show');
+}
+
+function getCaptchaToken(id) { try { return hcaptcha.getResponse(id); } catch(e) { return ''; } }
+function resetCaptcha(id) { try { hcaptcha.reset(id); } catch(e) {} }
+
+async function doSignIn() {
+  const email = document.getElementById('si-email').value.trim();
+  const password = document.getElementById('si-password').value;
+  const captchaToken = getCaptchaToken('hcap-signin');
+  if (!email || !password) { showAuthErr('Please fill in all fields.'); return; }
+  if (!captchaToken) { showAuthErr('Please complete the captcha.'); return; }
+  const btn = document.getElementById('btn-signin');
+  btn.disabled = true; btn.innerHTML = '<div class="loading-spinner"></div> Signing in...';
+  const { error } = await sb.auth.signInWithPassword({ email, password, options: { captchaToken } });
+  btn.disabled = false; btn.innerHTML = 'Sign in';
+  resetCaptcha('hcap-signin');
+  if (error) { showAuthErr(error.message); return; }
+}
+
+async function doSignUp() {
+  const username = document.getElementById('su-username').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const password = document.getElementById('su-password').value;
+  const captchaToken = getCaptchaToken('hcap-signup');
+  if (!username || !email || !password) { showAuthErr('Please fill in all fields.'); return; }
+  if (username.length < 3) { showAuthErr('Username must be at least 3 characters.'); return; }
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) { showAuthErr('Username can only contain letters, numbers, and underscores.'); return; }
+  if (password.length < 6) { showAuthErr('Password must be at least 6 characters.'); return; }
+  if (!captchaToken) { showAuthErr('Please complete the captcha.'); return; }
+  const btn = document.getElementById('btn-signup');
+  btn.disabled = true; btn.innerHTML = '<div class="loading-spinner"></div> Creating account...';
+  const { data: existing } = await sb.from('profiles').select('id').eq('username', username).single();
+  if (existing) {
+    btn.disabled = false; btn.innerHTML = 'Create account';
+    resetCaptcha('hcap-signup');
+    showAuthErr('That username is already taken.'); return;
+  }
+  const { data, error } = await sb.auth.signUp({
+    email, password,
+    options: {
+      captchaToken,
+      data: { username },
+      emailRedirectTo: 'https://onerundevs.github.io/quickwarp/'
+    }
+  });
+  btn.disabled = false; btn.innerHTML = 'Create account';
+  resetCaptcha('hcap-signup');
+  if (error) { showAuthErr(error.message); return; }
+  if (data.user) {
+    await sb.from('profiles').upsert({ id: data.user.id, username });
+  }
+  pendingVerifyEmail = email;
+  document.getElementById('verify-email-display').textContent = email;
+  showAuthForm('verify');
+}
+
+async function resendVerification() {
+  if (!pendingVerifyEmail) return;
+  const { error } = await sb.auth.resend({ type: 'signup', email: pendingVerifyEmail, options: { emailRedirectTo: 'https://onerundevs.github.io/quickwarp/' } });
+  if (error) { notify('Could not resend: ' + error.message); } else { notify('Verification email resent!'); }
+}
+
+async function doSignOut() {
+  await sb.auth.signOut();
+  notify('Signed out.');
+}
+
+// ── PROJECTS ──
 const PROJECT_IDS = {
   featured: ["10128407","60917032","104","292189072","385692118","115303013","403273878","459273775"],
   trending:  ["498788255","173","734866463","560886869","10128407","292189072","385692118","60917032"],
@@ -374,7 +643,6 @@ const PROJECT_IDS = {
   remixes:   ["403273878","498788255","560886869","173","459273775","10128407","292189072","60917032"],
   explore:   ["10128407","60917032","104","292189072","385692118","115303013","403273878","459273775","498788255","173","734866463","560886869"],
 };
-
 const BADGES = {"10128407":"Hot","60917032":"Featured","104":"Classic","385692118":"Trending","459273775":"Hot"};
 const cache = {};
 
@@ -382,17 +650,15 @@ async function fetchProject(id) {
   if (cache[id]) return cache[id];
   try {
     const r = await fetch(`https://api.scratch.mit.edu/projects/${id}`);
-    if (!r.ok) throw new Error('not ok');
-    const d = await r.json();
-    cache[id] = d;
-    return d;
+    if (!r.ok) throw new Error();
+    const d = await r.json(); cache[id] = d; return d;
   } catch(e) { return null; }
 }
 
 function fmtNum(n) {
-  if (!n && n !== 0) return '—';
-  if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
-  if (n >= 1000) return (n/1000).toFixed(1)+'k';
+  if (!n && n!==0) return '—';
+  if (n>=1000000) return (n/1000000).toFixed(1)+'M';
+  if (n>=1000) return (n/1000).toFixed(1)+'k';
   return String(n);
 }
 
@@ -406,8 +672,9 @@ function skeletonCard() {
   </div>`;
 }
 
-async function renderGrid(gridId, ids, badge) {
+async function renderGrid(gridId, ids) {
   const grid = document.getElementById(gridId);
+  if (!grid) return;
   grid.innerHTML = ids.map(()=>skeletonCard()).join('');
   const projects = await Promise.all(ids.map(id => fetchProject(id)));
   grid.innerHTML = '';
@@ -436,7 +703,6 @@ async function renderGrid(gridId, ids, badge) {
   });
 }
 
-// Render all grids
 renderGrid('g-featured', PROJECT_IDS.featured);
 renderGrid('g-trending',  PROJECT_IDS.trending);
 renderGrid('g-recent',    PROJECT_IDS.recent);
@@ -444,7 +710,6 @@ renderGrid('g-loved',     PROJECT_IDS.loved);
 renderGrid('g-remixes',   PROJECT_IDS.remixes);
 renderGrid('g-explore',   PROJECT_IDS.explore);
 
-// Featured users from Scratch API
 async function loadUsers() {
   const names = ['griffpatch','Will_Wam','KIKOMAN590','Paddle2See'];
   const list = document.getElementById('users-list');
@@ -455,51 +720,37 @@ async function loadUsers() {
       const div = document.createElement('div');
       div.className = 'fu';
       div.innerHTML = `
-        <div class="fu-av">
-          <img src="${u.profile?.images?.['32x32']||''}" alt="${name}"
-            onerror="this.parentElement.textContent='${name[0].toUpperCase()}'">
-        </div>
-        <div><div class="fu-name">${name}</div><div class="fu-count">${fmtNum(u.history?.joined?new Date(u.history.joined).getFullYear():null)} joined</div></div>`;
+        <div class="fu-av"><img src="${u.profile?.images?.['32x32']||''}" alt="${name}" onerror="this.parentElement.textContent='${name[0].toUpperCase()}'"></div>
+        <div><div class="fu-name">${name}</div><div class="fu-count">Scratch creator</div></div>`;
       list.appendChild(div);
-    } catch(e) {
-      const div = document.createElement('div');
-      div.className = 'fu';
-      div.innerHTML = `<div class="fu-av">${name[0].toUpperCase()}</div><div><div class="fu-name">${name}</div></div>`;
-      list.appendChild(div);
-    }
+    } catch(e) {}
   }
 }
 loadUsers();
 
-// DETAIL MODAL
+// ── DETAIL ──
 async function openDetail(id) {
   document.getElementById('ov-detail').classList.add('open');
   document.getElementById('detail-modal-title').textContent = 'Loading...';
-  document.getElementById('detail-body').innerHTML = '<div style="display:flex;justify-content:center;padding:40px"><div class="loading-spinner"></div></div>';
-
+  document.getElementById('detail-body').innerHTML = '<div style="display:flex;justify-content:center;padding:40px"><div class="loading-spinner" style="width:24px;height:24px;border-width:3px;border-color:var(--border);border-top-color:var(--acc)"></div></div>';
   const p = await fetchProject(id);
-  if (!p) {
-    document.getElementById('detail-body').innerHTML = '<div class="err-state">Could not load project data.</div>';
-    return;
-  }
-
+  if (!p) { document.getElementById('detail-body').innerHTML = '<div class="err-state">Could not load project data.</div>'; return; }
   document.getElementById('detail-modal-title').textContent = p.title;
   const thumb = p.image || `https://cdn2.scratch.mit.edu/get_image/project/${id}_480x360.png`;
   const desc = p.description || 'No description provided.';
   const instructions = p.instructions || '';
   const created = p.history?.created ? new Date(p.history.created).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'}) : '';
-
   document.getElementById('detail-body').innerHTML = `
     <div class="detail-grid">
       <div>
-        <div class="player-wrap" id="pw-${id}">
+        <div class="player-wrap">
           <div class="player-ph" id="ph-${id}">
             <div class="player-ph-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M5 3l14 9-14 9V3z" fill="#7c7a99"/></svg></div>
             <p>Click Play to run this project</p>
           </div>
           <iframe id="pf-${id}" style="display:none;width:100%;height:100%;border:none" allowfullscreen allow="autoplay; fullscreen"></iframe>
         </div>
-        <button class="play-btn" style="margin-top:10px;width:100%" onclick="playProject('${id}')">
+        <button class="play-btn" style="margin-top:10px" onclick="playProject('${id}')">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 2l11 6.5L3 15V2z" fill="white"/></svg>
           Play Project
         </button>
@@ -507,7 +758,7 @@ async function openDetail(id) {
       <div class="detail-info">
         <div>
           <div class="detail-title">${p.title}</div>
-          <div class="detail-author" style="margin-top:4px">by <span onclick="notify('Opening ${p.author?.username||''}\\'s profile...')">${p.author?.username||'unknown'}</span></div>
+          <div class="detail-author" style="margin-top:4px">by <span>${p.author?.username||'unknown'}</span></div>
           ${created?`<div class="detail-date" style="margin-top:4px">Shared ${created}</div>`:''}
         </div>
         <div class="detail-stats">
@@ -524,7 +775,7 @@ async function openDetail(id) {
           <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Instructions</div>
           <div class="detail-desc">${instructions}</div>
         </div>`:''}
-        <a href="https://scratch.mit.edu/projects/${id}" target="_blank" style="font-size:12px;color:var(--acc3);text-decoration:none">View on Scratch</a>
+        <a href="https://scratch.mit.edu/projects/${id}" target="_blank" rel="noopener" style="font-size:12px;color:var(--acc3);text-decoration:none">View on Scratch</a>
       </div>
     </div>`;
 }
@@ -532,23 +783,19 @@ async function openDetail(id) {
 function playProject(id) {
   const ph = document.getElementById('ph-'+id);
   const frame = document.getElementById('pf-'+id);
-  if (ph) ph.style.display = 'none';
-  if (frame) { frame.style.display = 'block'; frame.src = `https://turbowarp.org/${id}/embed`; }
+  if (ph) ph.style.display='none';
+  if (frame) { frame.style.display='block'; frame.src=`https://turbowarp.org/${id}/embed`; }
 }
+function closeDetail() { document.getElementById('ov-detail').classList.remove('open'); document.getElementById('detail-body').innerHTML=''; }
 
-function closeDetail() {
-  document.getElementById('ov-detail').classList.remove('open');
-  document.getElementById('detail-body').innerHTML = '';
-}
-
-// LOOKUP
+// ── LOOKUP ──
 function extractID(v){v=v.trim();if(/^\d+$/.test(v))return v;const m=v.match(/projects\/(\d+)/);return m?m[1]:null}
 function openLookup(){document.getElementById('ov-lookup').classList.add('open');setTimeout(()=>document.getElementById('lookup-input').focus(),100)}
 function closeLookup(){document.getElementById('ov-lookup').classList.remove('open')}
 function doLookup(){const id=extractID(document.getElementById('lookup-input').value);if(!id){notify('Enter a valid Scratch URL or project ID');return;}closeLookup();openDetail(id)}
 function quickLookup(id){document.getElementById('lookup-input').value=id;doLookup()}
 
-// UPLOAD
+// ── UPLOAD ──
 function openUpload(){document.getElementById('ov-upload').classList.add('open')}
 function closeUpload(){document.getElementById('ov-upload').classList.remove('open');resetUpload()}
 function handleFile(file){
@@ -569,7 +816,7 @@ function dzOver(e){e.preventDefault();document.getElementById('dz').classList.ad
 function dzLeave(){document.getElementById('dz').classList.remove('over')}
 function dzDrop(e){e.preventDefault();dzLeave();const f=e.dataTransfer.files[0];if(f)handleFile(f)}
 
-// NAV
+// ── NAV ──
 function showPage(n){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+n).classList.add('active')}
 function setNav(n){document.querySelectorAll('.nl').forEach(x=>x.classList.remove('active'));const el=document.getElementById('nav-'+n);if(el)el.classList.add('active')}
 function setTab(el,name){
@@ -581,7 +828,7 @@ function closeSidebar(){document.getElementById('sidebar').classList.remove('ope
 
 let nt;
 function notify(msg){const el=document.getElementById('notif');el.textContent=msg;el.classList.add('show');clearTimeout(nt);nt=setTimeout(()=>el.classList.remove('show'),3200)}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDetail();closeLookup();closeUpload();closeSidebar()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDetail();closeLookup();closeUpload();closeAuth();closeSidebar()}});
 </script>
 </body>
 </html>
