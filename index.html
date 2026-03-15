@@ -488,6 +488,13 @@ async function loadProfile(userId) {
   return data;
 }
 
+function renderSidebarAuthLoading() {
+  const authArea = document.getElementById('sidebar-auth-area');
+  const bottomArea = document.getElementById('sidebar-bottom-area');
+  authArea.innerHTML = `<div style="padding:10px 10px;display:flex;align-items:center;gap:8px;opacity:.4"><div class="loading-spinner" style="border-color:var(--border);border-top-color:var(--muted)"></div><span style="font-size:12px;color:var(--muted)">Loading...</span></div>`;
+  bottomArea.innerHTML = '';
+}
+
 function renderSidebarAuth() {
   const authArea = document.getElementById('sidebar-auth-area');
   const bottomArea = document.getElementById('sidebar-bottom-area');
@@ -539,6 +546,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
 });
 
 (async () => {
+  renderSidebarAuthLoading();
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     currentUser = session.user;
@@ -675,22 +683,14 @@ const cache = {};
 
 async function fetchProject(id) {
   if (cache[id]) return cache[id];
-  // Scratch API blocks direct browser requests (CORS), proxy required
-  const endpoints = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent('https://api.scratch.mit.edu/projects/'+id)}`,
-    `https://corsproxy.io/?${encodeURIComponent('https://api.scratch.mit.edu/projects/'+id)}`,
-  ];
-  for (const url of endpoints) {
-    try {
-      const r = await fetch(url);
-      if (!r.ok) continue;
-      const d = await r.json();
-      if (!d.id) continue;
-      cache[id] = d;
-      return d;
-    } catch(e) { continue; }
-  }
-  return null;
+  try {
+    // trampoline.turbowarp.org is TurboWarp's own CORS proxy for the Scratch API
+    const r = await fetch(`https://trampoline.turbowarp.org/api/projects/${id}`);
+    if (!r.ok) return null;
+    const d = await r.json();
+    cache[id] = d;
+    return d;
+  } catch(e) { return null; }
 }
 
 function fmtNum(n) {
@@ -753,7 +753,7 @@ async function loadUsers() {
   const list = document.getElementById('users-list');
   for (const name of names) {
     try {
-      const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://api.scratch.mit.edu/users/'+name)}`);
+      const r = await fetch(`https://trampoline.turbowarp.org/proxy/users/${name}`);
       const u = await r.json();
       const div = document.createElement('div');
       div.className = 'fu';
@@ -894,7 +894,7 @@ async function goScratchStep2() {
   btn.disabled=true; btn.innerHTML='<div class="loading-spinner"></div> Checking...';
 
   try {
-    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://api.scratch.mit.edu/users/'+encodeURIComponent(username))}`);
+    const r = await fetch(`https://trampoline.turbowarp.org/proxy/users/${encodeURIComponent(username)}`);
     if (!r.ok) throw new Error('not found');
     const u = await r.json();
 
@@ -958,7 +958,7 @@ async function verifyScratch(scratchUsername) {
 
   try {
     // Use Scratch proxy to avoid CORS — fetch user profile
-    const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://api.scratch.mit.edu/users/'+encodeURIComponent(scratchUsername))}`);
+    const r = await fetch(`https://trampoline.turbowarp.org/proxy/users/${encodeURIComponent(scratchUsername)}`);
     const u = await r.json();
     const aboutMe = u.profile?.bio || '';
     const status = u.profile?.status || '';
