@@ -363,7 +363,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
       <div id="form-signin">
         <div class="field"><label>Email</label><input type="email" id="si-email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doSignIn()"></div>
         <div class="field"><label>Password</label><input type="password" id="si-password" placeholder="Your password" onkeydown="if(event.key==='Enter')doSignIn()"></div>
-        <div class="hcaptcha-wrap"><div class="h-captcha" id="hcap-signin" data-sitekey="daa443fa-cd1e-4b18-a31a-9eca35fa61aa" data-theme="dark"></div></div>
+        <div class="hcaptcha-wrap"><div id="hcap-signin"></div></div>
         <button class="auth-submit" id="btn-signin" onclick="doSignIn()">Sign in</button>
         <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:12px;cursor:pointer" onclick="switchAuthTab('signup')">No account? Create one</p>
       </div>
@@ -373,7 +373,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:1
         <div class="field"><label>Username</label><input type="text" id="su-username" placeholder="coolcreator" onkeydown="if(event.key==='Enter')doSignUp()"></div>
         <div class="field"><label>Email</label><input type="email" id="su-email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doSignUp()"></div>
         <div class="field"><label>Password</label><input type="password" id="su-password" placeholder="At least 6 characters" onkeydown="if(event.key==='Enter')doSignUp()"></div>
-        <div class="hcaptcha-wrap"><div class="h-captcha" id="hcap-signup" data-sitekey="daa443fa-cd1e-4b18-a31a-9eca35fa61aa" data-theme="dark"></div></div>
+        <div class="hcaptcha-wrap"><div id="hcap-signup"></div></div>
         <button class="auth-submit" id="btn-signup" onclick="doSignUp()">Create account</button>
         <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:12px;cursor:pointer" onclick="switchAuthTab('signin')">Already have an account? Sign in</p>
       </div>
@@ -532,10 +532,21 @@ sb.auth.onAuthStateChange(async (event, session) => {
 })();
 
 // ── AUTH MODAL ──
+const captchaWidgets = {};
+let captchaRendered = false;
 function openAuth(tab='signin') {
   document.getElementById('ov-auth').classList.add('open');
   showAuthForm(tab === 'signup' ? 'signup' : 'signin');
   clearAuthMessages();
+  if (!captchaRendered) {
+    setTimeout(() => {
+      try {
+        captchaWidgets['signin'] = hcaptcha.render('hcap-signin', { sitekey: 'daa443fa-cd1e-4b18-a31a-9eca35fa61aa', theme: 'dark' });
+        captchaWidgets['signup'] = hcaptcha.render('hcap-signup', { sitekey: 'daa443fa-cd1e-4b18-a31a-9eca35fa61aa', theme: 'dark' });
+        captchaRendered = true;
+      } catch(e) {}
+    }, 200);
+  }
 }
 function closeAuth() { document.getElementById('ov-auth').classList.remove('open') }
 
@@ -569,20 +580,20 @@ function clearAuthMessages() {
   document.getElementById('auth-success').classList.remove('show');
 }
 
-function getCaptchaToken(id) { try { return hcaptcha.getResponse(id); } catch(e) { return ''; } }
-function resetCaptcha(id) { try { hcaptcha.reset(id); } catch(e) {} }
+function getCaptchaToken(key) { try { return hcaptcha.getResponse(captchaWidgets[key]); } catch(e) { return ''; } }
+function resetCaptcha(key) { try { hcaptcha.reset(captchaWidgets[key]); } catch(e) {} }
 
 async function doSignIn() {
   const email = document.getElementById('si-email').value.trim();
   const password = document.getElementById('si-password').value;
-  const captchaToken = getCaptchaToken('hcap-signin');
+  const captchaToken = getCaptchaToken('signin');
   if (!email || !password) { showAuthErr('Please fill in all fields.'); return; }
   if (!captchaToken) { showAuthErr('Please complete the captcha.'); return; }
   const btn = document.getElementById('btn-signin');
   btn.disabled = true; btn.innerHTML = '<div class="loading-spinner"></div> Signing in...';
   const { error } = await sb.auth.signInWithPassword({ email, password, options: { captchaToken } });
   btn.disabled = false; btn.innerHTML = 'Sign in';
-  resetCaptcha('hcap-signin');
+  resetCaptcha('signin');
   if (error) { showAuthErr(error.message); return; }
 }
 
@@ -590,10 +601,10 @@ async function doSignUp() {
   const username = document.getElementById('su-username').value.trim();
   const email = document.getElementById('su-email').value.trim();
   const password = document.getElementById('su-password').value;
-  const captchaToken = getCaptchaToken('hcap-signup');
+  const captchaToken = getCaptchaToken('signup');
   if (!username || !email || !password) { showAuthErr('Please fill in all fields.'); return; }
   if (username.length < 3) { showAuthErr('Username must be at least 3 characters.'); return; }
-  if (!/^[a-zA-Z0-9_]+$/.test(username)) { showAuthErr('Username can only contain letters, numbers, and underscores.'); return; }
+  if (!/^[a-zA-Z0-9_-]+$/.test(username)) { showAuthErr('Username can only contain letters, numbers, underscores, and dashes.'); return; }
   if (password.length < 6) { showAuthErr('Password must be at least 6 characters.'); return; }
   if (!captchaToken) { showAuthErr('Please complete the captcha.'); return; }
   const btn = document.getElementById('btn-signup');
@@ -601,7 +612,7 @@ async function doSignUp() {
   const { data: existing } = await sb.from('profiles').select('id').eq('username', username).single();
   if (existing) {
     btn.disabled = false; btn.innerHTML = 'Create account';
-    resetCaptcha('hcap-signup');
+    resetCaptcha('signup');
     showAuthErr('That username is already taken.'); return;
   }
   const { data, error } = await sb.auth.signUp({
@@ -613,7 +624,7 @@ async function doSignUp() {
     }
   });
   btn.disabled = false; btn.innerHTML = 'Create account';
-  resetCaptcha('hcap-signup');
+  resetCaptcha('signup');
   if (error) { showAuthErr(error.message); return; }
   if (data.user) {
     await sb.from('profiles').upsert({ id: data.user.id, username });
